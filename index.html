@@ -154,6 +154,19 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .logo-upload-label:hover{border-color:#71717a;color:#f5f5f5}
 #logo-status{font-size:11px;color:#10B981}
 .gen-row{display:flex;gap:8px;flex-wrap:wrap}
+
+.logo-drop-zone{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;border:2px dashed #2a2a2e;border-radius:10px;padding:16px 20px;background:#141416;cursor:pointer;transition:all 0.2s;min-height:80px;text-align:center;width:100%;margin-bottom:10px}
+.logo-drop-zone:hover,.logo-drop-zone.drag-over{border-color:#10B981;background:rgba(16,185,129,0.06)}
+.logo-drop-zone.has-logo{border-color:#10B981;border-style:solid}
+.logo-drop-zone .drop-icon{font-size:22px;line-height:1}
+.logo-drop-zone .drop-label{font-size:12px;color:#a1a1aa;line-height:1.4}
+.logo-drop-zone .drop-sub{font-size:10px;color:#525252}
+.logo-drop-zone .logo-preview{max-height:48px;max-width:180px;object-fit:contain;border-radius:4px}
+.logo-url-row{display:flex;gap:6px;align-items:center;width:100%;margin-bottom:10px}
+.logo-url-input{flex:1;padding:8px 12px;border-radius:8px;border:1px solid #2a2a2e;background:#141416;font-size:13px;color:#f5f5f5;outline:none;font-family:var(--font)}
+.logo-url-input:focus{border-color:#10B981}
+.logo-url-btn{padding:8px 14px;border-radius:8px;border:1px solid #2a2a2e;background:#1e1e22;font-size:12px;color:#a1a1aa;cursor:pointer;white-space:nowrap;font-family:var(--font)}
+.logo-url-btn:hover{border-color:#10B981;color:#10B981}
 </style>
 </head>
 <body>
@@ -195,19 +208,30 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 <div class="gen-section">
 <div class="brand-fields">
   <div style="font-size:11px;color:#71717a;margin-bottom:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px">Leave-behind generator — all fields required</div>
-  <div class="brand-row">
-    <input class="gen-input" id="n-roi" placeholder="Company name (required)" oninput="checkPDFReady()">
-    <input class="gen-input" id="website-url" placeholder="Website URL (required)" oninput="checkPDFReady()" style="max-width:220px">
-    <label class="logo-upload-label" for="logo-upload" id="logo-upload-label">📎 Customer Logo (required)</label>
-    <input type="file" id="logo-upload" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
-    <span id="logo-status"></span>
+  <div class="brand-row" style="margin-bottom:10px">
+    <input class="gen-input" id="n-roi" placeholder="Company name (required)" oninput="checkPDFReady()" style="flex:1;min-width:140px">
+    <input class="gen-input" id="website-url" placeholder="Website URL (required)" oninput="checkPDFReady()" style="flex:1;min-width:140px">
   </div>
+  <div id="logo-drop-zone" class="logo-drop-zone" onclick="document.getElementById('logo-upload').click()" ondragover="logoDragOver(event)" ondragleave="logoDragLeave(event)" ondrop="logoDrop(event)">
+    <img id="logo-preview-img" class="logo-preview" style="display:none">
+    <div id="drop-placeholder">
+      <div class="drop-icon">&#128444;&#65039;</div>
+      <div class="drop-label"><strong>Drop logo here</strong> &middot; click to browse &middot; or Ctrl+V to paste screenshot</div>
+      <div class="drop-sub">PNG, JPG, SVG, WebP accepted</div>
+    </div>
+  </div>
+  <div class="logo-url-row">
+    <input class="logo-url-input" id="logo-url-input" placeholder="Or paste image URL (https://...)" onkeydown="if(event.key==='Enter')loadLogoFromUrl()">
+    <button class="logo-url-btn" onclick="loadLogoFromUrl()">Load URL</button>
+  </div>
+  <input type="file" id="logo-upload" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
+  <span id="logo-status" style="font-size:11px;display:block;margin-bottom:8px"></span>
   <div class="gen-row">
     <button class="gen-btn" onclick="GEN('roi')">Generate ROI card</button>
     <button class="gen-btn2" onclick="CPH('roi')">Copy HTML</button>
-    <button class="gen-btn2" id="pdf-btn" onclick="GENPDF()" disabled style="opacity:0.4;cursor:not-allowed">📄 PDF Leave-Behind</button>
+    <button class="gen-btn2" id="pdf-btn" onclick="GENPDF()" disabled style="opacity:0.4;cursor:not-allowed">&#128196; PDF Leave-Behind</button>
   </div>
-  <div id="pdf-validation-msg" style="font-size:11px;color:#F59E0B;margin-top:8px;display:none">⚠ Enter company name, website, and upload their logo to generate the PDF.</div>
+  <div id="pdf-validation-msg" style="font-size:11px;color:#F59E0B;margin-top:8px;display:none">&#9888; Enter company name, website URL, and add their logo to unlock the PDF.</div>
 </div>
 <div class="card-wrap" id="w-roi"><div class="card-actions"><button class="dl-btn" onclick="DL('roi')">Download image</button></div><div id="o-roi"></div></div>
 </div>
@@ -307,61 +331,121 @@ function CPH(tab){GEN(tab);setTimeout(function(){var el=document.getElementById(
 
 
 var uploadedLogoDataUrl = null;
+
+function setLogoDataUrl(dataUrl, label) {
+  uploadedLogoDataUrl = dataUrl;
+  var dz = document.getElementById('logo-drop-zone');
+  var ph = document.getElementById('drop-placeholder');
+  var img = document.getElementById('logo-preview-img');
+  var st = document.getElementById('logo-status');
+  if (img) { img.src = dataUrl; img.style.display = 'block'; }
+  if (ph) ph.style.display = 'none';
+  if (dz) dz.classList.add('has-logo');
+  if (st) { st.textContent = '\u2713 ' + (label||'Logo ready'); st.style.color = '#10B981'; }
+  checkPDFReady();
+}
+
 function handleLogoUpload(input) {
   var file = input.files[0];
   if (!file) return;
   var reader = new FileReader();
-  reader.onload = function(e) {
-    uploadedLogoDataUrl = e.target.result;
-    var s = document.getElementById('logo-status');
-    if (s) { s.textContent = '✓ ' + file.name; s.style.color='#10B981'; }
-    var lbl = document.getElementById('logo-upload-label');
-    if (lbl) { lbl.style.borderColor='#10B981'; lbl.style.color='#10B981'; }
-    checkPDFReady();
-  };
+  reader.onload = function(e) { setLogoDataUrl(e.target.result, file.name); };
   reader.readAsDataURL(file);
 }
+
+function logoDragOver(e) {
+  e.preventDefault();
+  var dz = document.getElementById('logo-drop-zone');
+  if (dz) dz.classList.add('drag-over');
+}
+function logoDragLeave(e) {
+  var dz = document.getElementById('logo-drop-zone');
+  if (dz) dz.classList.remove('drag-over');
+}
+function logoDrop(e) {
+  e.preventDefault();
+  var dz = document.getElementById('logo-drop-zone');
+  if (dz) dz.classList.remove('drag-over');
+  var file = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    var r = new FileReader();
+    r.onload = function(ev) { setLogoDataUrl(ev.target.result, file.name); };
+    r.readAsDataURL(file);
+  } else {
+    var url = e.dataTransfer && (e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain'));
+    if (url && url.match(/^https?:\/\//)) fetchLogoFromUrl(url);
+  }
+}
+
+function loadLogoFromUrl() {
+  var inp = document.getElementById('logo-url-input');
+  var url = inp ? inp.value.trim() : '';
+  if (url) fetchLogoFromUrl(url);
+}
+
+function fetchLogoFromUrl(url) {
+  var st = document.getElementById('logo-status');
+  if (st) { st.textContent = 'Loading\u2026'; st.style.color = '#a1a1aa'; }
+  var img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    var c = document.createElement('canvas');
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    c.getContext('2d').drawImage(img, 0, 0);
+    try {
+      setLogoDataUrl(c.toDataURL('image/png'), url.split('/').pop().slice(0, 30));
+    } catch(err) {
+      // CORS blocked — store URL directly, PDF server will fetch it
+      uploadedLogoDataUrl = url;
+      var pi = document.getElementById('logo-preview-img');
+      var ph = document.getElementById('drop-placeholder');
+      var dz = document.getElementById('logo-drop-zone');
+      if (pi) { pi.src = url; pi.style.display = 'block'; }
+      if (ph) ph.style.display = 'none';
+      if (dz) dz.classList.add('has-logo');
+      if (st) { st.textContent = '\u2713 URL set'; st.style.color = '#10B981'; }
+      checkPDFReady();
+    }
+  };
+  img.onerror = function() {
+    if (st) { st.textContent = '\u26a0 Could not load image from URL'; st.style.color = '#F59E0B'; }
+  };
+  img.src = url;
+}
+
+document.addEventListener('paste', function(e) {
+  var items = e.clipboardData && e.clipboardData.items;
+  if (!items) return;
+  for (var i = 0; i < items.length; i++) {
+    if (items[i].type.startsWith('image/')) {
+      var file = items[i].getAsFile();
+      var r = new FileReader();
+      r.onload = function(ev) { setLogoDataUrl(ev.target.result, 'pasted screenshot'); };
+      r.readAsDataURL(file);
+      e.preventDefault();
+      break;
+    }
+  }
+});
+
 function checkPDFReady() {
   var name = ($('n-roi') && $('n-roi').value.trim()) || '';
-  var url  = ($('website-url') && $('website-url').value.trim()) || '';
+  var siteurl = ($('website-url') && $('website-url').value.trim()) || '';
   var hasLogo = !!uploadedLogoDataUrl;
-  var ready = name.length > 0 && url.length > 0 && hasLogo;
+  var ready = name.length > 0 && siteurl.length > 0 && hasLogo;
   var btn = $('pdf-btn');
   var msg = $('pdf-validation-msg');
-  if (btn) { btn.disabled = !ready; btn.style.opacity = ready ? '1' : '0.4'; btn.style.cursor = ready ? 'pointer' : 'not-allowed'; btn.style.background = ready ? '#10B981' : ''; btn.style.color = ready ? '#fff' : ''; btn.style.borderColor = ready ? '#10B981' : ''; }
+  if (btn) {
+    btn.disabled = !ready;
+    btn.style.opacity = ready ? '1' : '0.4';
+    btn.style.cursor = ready ? 'pointer' : 'not-allowed';
+    btn.style.background = ready ? '#10B981' : '';
+    btn.style.color = ready ? '#fff' : '';
+    btn.style.borderColor = ready ? '#10B981' : '';
+  }
   if (msg) msg.style.display = ready ? 'none' : 'block';
   return ready;
 }
-function GENPDF() {
-  if (!checkPDFReady()) return;
-  var name = $('n-roi').value.trim();
-  var website = $('website-url').value.trim();
-  var btn = $('pdf-btn');
-  if (btn) { btn.textContent = 'Generating…'; btn.disabled = true; }
-  var r = C(V.vis, V.arpu, V.fee, V.opt, V.lift);
-  var payload = {
-    company: name, website: website, lift: V.lift / 100,
-    monthly_roi: Math.round(r.moRev), annual_roi: Math.round(r.annROI),
-    three_year_value: Math.round(r.annROI * 3), payback_days: Math.round(r.paybackDays),
-    roi_x: r.roiX, arpu: V.arpu, opt_rate: V.opt, daily_users: V.vis,
-    logo_data_url: uploadedLogoDataUrl
-  };
-  fetch('/api/generate-pdf', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
-  .then(function(res) { if (!res.ok) throw new Error('PDF server error ' + res.status); return res.blob(); })
-  .then(function(blob) {
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement('a'); a.href = url;
-    a.download = 'lucra-roi-' + name.toLowerCase().replace(/[^a-z0-9]/g,'-') + '.pdf';
-    document.body.appendChild(a); a.click(); document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    if (btn) { btn.textContent = '📄 PDF Leave-Behind'; btn.disabled = false; checkPDFReady(); }
-  })
-  .catch(function(err) {
-    alert('PDF error: ' + err.message);
-    if (btn) { btn.textContent = '📄 PDF Leave-Behind'; btn.disabled = false; checkPDFReady(); }
-  });
-}
-
 initP();sync();U();
 </script>
 </body>
