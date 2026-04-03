@@ -210,7 +210,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
   <div style="font-size:11px;color:#71717a;margin-bottom:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px">Leave-behind generator — all fields required</div>
   <div class="brand-row" style="margin-bottom:10px">
     <input class="gen-input" id="n-roi" placeholder="Company name (required)" oninput="checkPDFReady()" style="flex:1;min-width:140px">
-    <input class="gen-input" id="website-url" placeholder="Website URL (required)" oninput="checkPDFReady()" style="flex:1;min-width:140px">
+    <input class="gen-input" id="website-url" placeholder="Website URL (e.g. draftkings.com)" oninput="checkPDFReady()" onblur="var v=this.value.trim();if(v&&!uploadedLogoDataUrl)autoFetchLogo(v);" onkeydown="if(event.key==='Enter'){var v=this.value.trim();if(v&&!uploadedLogoDataUrl)autoFetchLogo(v);}" style="flex:1;min-width:140px">
   </div>
   <div id="logo-drop-zone" class="logo-drop-zone" onclick="document.getElementById('logo-upload').click()" ondragover="logoDragOver(event)" ondragleave="logoDragLeave(event)" ondrop="logoDrop(event)">
     <img id="logo-preview-img" class="logo-preview" style="display:none">
@@ -464,6 +464,74 @@ function logoDrop(e) {
     var url = e.dataTransfer && (e.dataTransfer.getData('text/uri-list') || e.dataTransfer.getData('text/plain'));
     if (url && url.match(/^https?:\/\//)) fetchLogoFromUrl(url);
   }
+}
+
+
+function extractDomain(url) {
+  try {
+    if (!url.match(/^https?:\/\//)) url = 'https://' + url;
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch(e) { return null; }
+}
+
+function autoFetchLogo(websiteUrl) {
+  if (!websiteUrl) return;
+  var domain = extractDomain(websiteUrl);
+  if (!domain) return;
+  var st = document.getElementById('logo-status');
+  if (st) { st.textContent = '🔍 Auto-detecting logo for ' + domain + '…'; st.style.color = '#a1a1aa'; }
+
+  // 1) Clearbit — clean brand logos, free, best quality
+  var clearbitUrl = 'https://logo.clearbit.com/' + domain + '?size=200';
+  var img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = function() {
+    if (img.naturalWidth < 16) { tryFavicon(domain); return; }
+    try {
+      var c = document.createElement('canvas');
+      c.width = img.naturalWidth; c.height = img.naturalHeight;
+      c.getContext('2d').drawImage(img, 0, 0);
+      setLogoDataUrl(c.toDataURL('image/png'), domain + ' (auto)');
+    } catch(e) {
+      // CORS blocked — store direct URL, still works for display + html2canvas with allowTaint
+      setLogoDirectUrl(clearbitUrl, domain + ' (auto)');
+    }
+  };
+  img.onerror = function() { tryFavicon(domain); };
+  img.src = clearbitUrl + '&cb=' + Date.now();
+}
+
+function tryFavicon(domain) {
+  var st = document.getElementById('logo-status');
+  // Google high-res favicon as fallback
+  var url = 'https://www.google.com/s2/favicons?sz=128&domain=' + domain;
+  var img2 = new Image();
+  img2.crossOrigin = 'anonymous';
+  img2.onload = function() {
+    try {
+      var c = document.createElement('canvas');
+      c.width = img2.naturalWidth; c.height = img2.naturalHeight;
+      c.getContext('2d').drawImage(img2, 0, 0);
+      setLogoDataUrl(c.toDataURL('image/png'), domain + ' icon (auto)');
+    } catch(e) { setLogoDirectUrl(url, domain + ' icon (auto)'); }
+  };
+  img2.onerror = function() {
+    if (st) { st.textContent = '⚠ No logo found — upload or paste one manually'; st.style.color='#F59E0B'; }
+  };
+  img2.src = url;
+}
+
+function setLogoDirectUrl(url, label) {
+  uploadedLogoDataUrl = url;
+  var dz = document.getElementById('logo-drop-zone');
+  var ph = document.getElementById('drop-placeholder');
+  var img = document.getElementById('logo-preview-img');
+  if (img) { img.src = url; img.style.display = 'block'; }
+  if (ph) ph.style.display = 'none';
+  if (dz) dz.classList.add('has-logo');
+  var st = document.getElementById('logo-status');
+  if (st) { st.textContent = '✓ ' + label; st.style.color = '#9DFF93'; }
+  checkPDFReady();
 }
 
 function loadLogoFromUrl() {
