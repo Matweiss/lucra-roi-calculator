@@ -147,6 +147,13 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .flow-arrow{transform:rotate(90deg)}
 .tabs{flex-wrap:wrap}.tab{flex:none;width:calc(50% - 2px)}
 }
+
+.brand-fields{background:#1e1e22;border:1px solid #2a2a2e;border-radius:10px;padding:14px 16px;margin-bottom:14px}
+.brand-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+.logo-upload-label{padding:8px 14px;border-radius:8px;border:1px solid #2a2a2e;background:#141416;color:#a1a1aa;font-size:13px;font-weight:500;cursor:pointer;white-space:nowrap;min-height:40px;display:flex;align-items:center;font-family:var(--font)}
+.logo-upload-label:hover{border-color:#71717a;color:#f5f5f5}
+#logo-status{font-size:11px;color:#10B981}
+.gen-row{display:flex;gap:8px;flex-wrap:wrap}
 </style>
 </head>
 <body>
@@ -185,7 +192,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 <div id="loyalty-compare"></div>
 <div class="pitch" id="pitch"></div>
 <div id="quota-track"></div>
-<div class="gen-section"><div class="gen-row"><input class="gen-input" id="n-roi" placeholder="Venue name (e.g. Five Iron Golf)"><button class="gen-btn" onclick="GEN('roi')">Generate ROI card</button><button class="gen-btn2" onclick="CPH('roi')">Copy HTML</button><button class="gen-btn2" id="pdf-btn" onclick="GENPDF()">📄 PDF Leave-Behind</button></div><div class="card-wrap" id="w-roi"><div class="card-actions"><button class="dl-btn" onclick="DL('roi')">Download image</button></div><div id="o-roi"></div></div></div>
+<div class="gen-section"><div class="brand-fields"><div class="brand-row"><input class="gen-input" id="n-roi" placeholder="Venue name (e.g. Five Iron Golf)"><input class="gen-input" id="brand-color" type="text" placeholder="Brand color (#hex)" value="#10B981" style="max-width:140px"><label class="logo-upload-label" for="logo-upload">📎 Customer Logo</label><input type="file" id="logo-upload" accept="image/*" style="display:none" onchange="handleLogoUpload(this)"><span id="logo-status"></span></div><div class="gen-row"><button class="gen-btn" onclick="GEN('roi')">Generate ROI card</button><button class="gen-btn2" onclick="CPH('roi')">Copy HTML</button><button class="gen-btn2" id="pdf-btn" onclick="GENPDF()" style="background:#10B981;color:#fff;border-color:#10B981">📄 PDF Leave-Behind</button></div></div><div class="card-wrap" id="w-roi"><div class="card-actions"><button class="dl-btn" onclick="DL('roi')">Download image</button></div><div id="o-roi"></div></div></div>
 </div>
 
 <div id="compare" style="display:none">
@@ -281,43 +288,44 @@ function DL(tab){var el=document.getElementById('cap-'+tab);if(!el)return;html2c
 function CPH(tab){GEN(tab);setTimeout(function(){var el=document.getElementById('cap-'+tab);if(!el)return;var html=el.outerHTML;navigator.clipboard.write([new ClipboardItem({'text/html':new Blob([html],{type:'text/html'}),'text/plain':new Blob([el.innerText],{type:'text/plain'})})]).then(function(){}).catch(function(){navigator.clipboard.writeText(html)})},100)}
 
 
-function GENPDF(){
-  var name=$('n-roi').value||'Venue';
-  var btn=$('pdf-btn');
-  btn.textContent='Generating...';
-  btn.disabled=true;
-  var r=C(V.vis,V.arpu,V.fee,V.opt,V.lift);
-  var payload={
-    company:name,
-    users:V.vis,
-    current_revenue:Math.round(V.arpu*V.vis*30*12),
-    lift:V.lift/100,
-    monthly_roi:Math.round(r.moRev),
-    annual_roi:Math.round(r.annROI),
-    three_year_value:Math.round(r.annROI*3),
-    payback_days:r.paybackDays,
-    roi_x:r.roiX
+var uploadedLogoDataUrl = null;
+function handleLogoUpload(input) {
+  var file = input.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    uploadedLogoDataUrl = e.target.result;
+    var s = document.getElementById('logo-status');
+    if (s) s.textContent = '✓ ' + file.name;
   };
-  fetch('/api/generate-pdf',{
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify(payload)
-  })
-  .then(function(res){if(!res.ok)throw new Error('PDF generation failed');return res.blob()})
-  .then(function(blob){
-    var url=URL.createObjectURL(blob);
-    var a=document.createElement('a');
-    a.href=url;
-    a.download='lucra-roi-'+name.toLowerCase().replace(/[^a-z0-9]/g,'-')+'.pdf';
-    a.click();
+  reader.readAsDataURL(file);
+}
+function GENPDF() {
+  var name = $('n-roi') ? ($('n-roi').value || 'Venue') : 'Venue';
+  var brandColor = $('brand-color') ? ($('brand-color').value || '#10B981') : '#10B981';
+  var btn = $('pdf-btn');
+  if (btn) { btn.textContent = 'Generating…'; btn.disabled = true; }
+  var r = C(V.vis, V.arpu, V.fee, V.opt, V.lift);
+  var payload = {
+    company: name, lift: V.lift / 100,
+    monthly_roi: Math.round(r.moRev), annual_roi: Math.round(r.annROI),
+    three_year_value: Math.round(r.annROI * 3), payback_days: Math.round(r.paybackDays),
+    roi_x: r.roiX, arpu: V.arpu, opt_rate: V.opt, daily_users: V.vis,
+    brand_color: brandColor, logo_data_url: uploadedLogoDataUrl || null
+  };
+  fetch('/api/generate-pdf', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+  .then(function(res) { if (!res.ok) throw new Error('Server error ' + res.status); return res.blob(); })
+  .then(function(blob) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a'); a.href = url;
+    a.download = 'lucra-roi-' + name.toLowerCase().replace(/[^a-z0-9]/g,'-') + '.pdf';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    btn.textContent='📄 PDF Leave-Behind';
-    btn.disabled=false;
+    if (btn) { btn.textContent = '📄 PDF Leave-Behind'; btn.disabled = false; }
   })
-  .catch(function(err){
-    alert('PDF generation unavailable: '+err.message);
-    btn.textContent='📄 PDF Leave-Behind';
-    btn.disabled=false;
+  .catch(function(err) {
+    alert('PDF error: ' + err.message);
+    if (btn) { btn.textContent = '📄 PDF Leave-Behind'; btn.disabled = false; }
   });
 }
 
