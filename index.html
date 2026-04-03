@@ -192,7 +192,25 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 <div id="loyalty-compare"></div>
 <div class="pitch" id="pitch"></div>
 <div id="quota-track"></div>
-<div class="gen-section"><div class="brand-fields"><div class="brand-row"><input class="gen-input" id="n-roi" placeholder="Venue name (e.g. Five Iron Golf)"><input class="gen-input" id="brand-color" type="text" placeholder="Brand color (#hex)" value="#10B981" style="max-width:140px"><label class="logo-upload-label" for="logo-upload">📎 Customer Logo</label><input type="file" id="logo-upload" accept="image/*" style="display:none" onchange="handleLogoUpload(this)"><span id="logo-status"></span></div><div class="gen-row"><button class="gen-btn" onclick="GEN('roi')">Generate ROI card</button><button class="gen-btn2" onclick="CPH('roi')">Copy HTML</button><button class="gen-btn2" id="pdf-btn" onclick="GENPDF()" style="background:#10B981;color:#fff;border-color:#10B981">📄 PDF Leave-Behind</button></div></div><div class="card-wrap" id="w-roi"><div class="card-actions"><button class="dl-btn" onclick="DL('roi')">Download image</button></div><div id="o-roi"></div></div></div>
+<div class="gen-section">
+<div class="brand-fields">
+  <div style="font-size:11px;color:#71717a;margin-bottom:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px">Leave-behind generator — all fields required</div>
+  <div class="brand-row">
+    <input class="gen-input" id="n-roi" placeholder="Company name (required)" oninput="checkPDFReady()">
+    <input class="gen-input" id="website-url" placeholder="Website URL (required)" oninput="checkPDFReady()" style="max-width:220px">
+    <label class="logo-upload-label" for="logo-upload" id="logo-upload-label">📎 Customer Logo (required)</label>
+    <input type="file" id="logo-upload" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
+    <span id="logo-status"></span>
+  </div>
+  <div class="gen-row">
+    <button class="gen-btn" onclick="GEN('roi')">Generate ROI card</button>
+    <button class="gen-btn2" onclick="CPH('roi')">Copy HTML</button>
+    <button class="gen-btn2" id="pdf-btn" onclick="GENPDF()" disabled style="opacity:0.4;cursor:not-allowed">📄 PDF Leave-Behind</button>
+  </div>
+  <div id="pdf-validation-msg" style="font-size:11px;color:#F59E0B;margin-top:8px;display:none">⚠ Enter company name, website, and upload their logo to generate the PDF.</div>
+</div>
+<div class="card-wrap" id="w-roi"><div class="card-actions"><button class="dl-btn" onclick="DL('roi')">Download image</button></div><div id="o-roi"></div></div>
+</div>
 </div>
 
 <div id="compare" style="display:none">
@@ -296,36 +314,51 @@ function handleLogoUpload(input) {
   reader.onload = function(e) {
     uploadedLogoDataUrl = e.target.result;
     var s = document.getElementById('logo-status');
-    if (s) s.textContent = '✓ ' + file.name;
+    if (s) { s.textContent = '✓ ' + file.name; s.style.color='#10B981'; }
+    var lbl = document.getElementById('logo-upload-label');
+    if (lbl) { lbl.style.borderColor='#10B981'; lbl.style.color='#10B981'; }
+    checkPDFReady();
   };
   reader.readAsDataURL(file);
 }
+function checkPDFReady() {
+  var name = ($('n-roi') && $('n-roi').value.trim()) || '';
+  var url  = ($('website-url') && $('website-url').value.trim()) || '';
+  var hasLogo = !!uploadedLogoDataUrl;
+  var ready = name.length > 0 && url.length > 0 && hasLogo;
+  var btn = $('pdf-btn');
+  var msg = $('pdf-validation-msg');
+  if (btn) { btn.disabled = !ready; btn.style.opacity = ready ? '1' : '0.4'; btn.style.cursor = ready ? 'pointer' : 'not-allowed'; btn.style.background = ready ? '#10B981' : ''; btn.style.color = ready ? '#fff' : ''; btn.style.borderColor = ready ? '#10B981' : ''; }
+  if (msg) msg.style.display = ready ? 'none' : 'block';
+  return ready;
+}
 function GENPDF() {
-  var name = $('n-roi') ? ($('n-roi').value || 'Venue') : 'Venue';
-  var brandColor = $('brand-color') ? ($('brand-color').value || '#10B981') : '#10B981';
+  if (!checkPDFReady()) return;
+  var name = $('n-roi').value.trim();
+  var website = $('website-url').value.trim();
   var btn = $('pdf-btn');
   if (btn) { btn.textContent = 'Generating…'; btn.disabled = true; }
   var r = C(V.vis, V.arpu, V.fee, V.opt, V.lift);
   var payload = {
-    company: name, lift: V.lift / 100,
+    company: name, website: website, lift: V.lift / 100,
     monthly_roi: Math.round(r.moRev), annual_roi: Math.round(r.annROI),
     three_year_value: Math.round(r.annROI * 3), payback_days: Math.round(r.paybackDays),
     roi_x: r.roiX, arpu: V.arpu, opt_rate: V.opt, daily_users: V.vis,
-    brand_color: brandColor, logo_data_url: uploadedLogoDataUrl || null
+    logo_data_url: uploadedLogoDataUrl
   };
   fetch('/api/generate-pdf', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) })
-  .then(function(res) { if (!res.ok) throw new Error('Server error ' + res.status); return res.blob(); })
+  .then(function(res) { if (!res.ok) throw new Error('PDF server error ' + res.status); return res.blob(); })
   .then(function(blob) {
     var url = URL.createObjectURL(blob);
     var a = document.createElement('a'); a.href = url;
     a.download = 'lucra-roi-' + name.toLowerCase().replace(/[^a-z0-9]/g,'-') + '.pdf';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    if (btn) { btn.textContent = '📄 PDF Leave-Behind'; btn.disabled = false; }
+    if (btn) { btn.textContent = '📄 PDF Leave-Behind'; btn.disabled = false; checkPDFReady(); }
   })
   .catch(function(err) {
     alert('PDF error: ' + err.message);
-    if (btn) { btn.textContent = '📄 PDF Leave-Behind'; btn.disabled = false; }
+    if (btn) { btn.textContent = '📄 PDF Leave-Behind'; btn.disabled = false; checkPDFReady(); }
   });
 }
 
