@@ -1,0 +1,8 @@
+{
+  "name": "lucra-roi-calculator",
+  "version": "2.0.0",
+  "description": "Lucra ROI Calculator V2 with PDF leave-behind generator",
+  "dependencies": {
+    "pdfkit": "^0.14.0"
+  }
+}
