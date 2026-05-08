@@ -192,6 +192,31 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .pf-total-row.pf-total-grand .pf-total-val{color:var(--green)}
 .pf-validation{background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:12px;color:#EF4444}
 .pf-validation ul{margin:6px 0 0 18px;padding:0}
+
+/* Preview document */
+.pf-preview-header{display:flex;justify-content:space-between;align-items:center;margin:18px 0 8px}
+.pf-preview-header h2{font-size:14px;color:var(--text);margin:0;font-weight:600}
+.pf-preview-legend{font-size:11px;color:var(--text3);display:flex;gap:12px;flex-wrap:wrap}
+.pf-preview-legend span{display:inline-flex;align-items:center;gap:4px}
+.pf-preview-legend i{display:inline-block;width:10px;height:10px;border-radius:2px}
+.pf-preview-section-doc{background:#fafafa;color:#0a0a0a;border-radius:var(--radius);padding:24px;font-size:13px;line-height:1.55;font-family:Georgia,'Times New Roman',serif;border:1px solid var(--border)}
+.pf-preview-section-doc h3{font-size:11px;text-transform:uppercase;letter-spacing:1.2px;font-weight:700;color:#444;margin:16px 0 6px;font-family:var(--font)}
+.pf-preview-section-doc h3:first-child{margin-top:0}
+.pf-preview-section-doc p{margin:0 0 10px}
+.pf-preview-section-doc table{width:100%;border-collapse:collapse;margin:6px 0;font-size:12.5px}
+.pf-preview-section-doc table td{padding:5px 0}
+.pf-preview-section-doc .ph{padding:1px 4px;border-radius:3px;background:transparent}
+.pf-preview-section-doc .ph-empty{background:#e8e8e8;color:#888;font-style:italic}
+.pf-preview-section-doc .ph-filled{background:transparent;color:#0a0a0a;font-weight:500}
+.pf-preview-section-doc .ph-custom{background:#fef3c7;color:#0a0a0a;font-weight:500}
+.pf-preview-section-doc .ph-flagged{background:#fef3c7;border:1.5px solid #f59e0b;padding:0 5px;color:#0a0a0a;font-weight:600}
+.pf-preview-section-doc .pf-special-block{margin-top:18px;border-top:1px solid #ddd;padding-top:14px}
+.pf-preview-section-doc .pf-special-content{background:#fef3c7;padding:10px 12px;border-radius:6px;border-left:3px solid #f59e0b;white-space:pre-wrap;font-family:var(--font);font-size:13px;line-height:1.5;color:#0a0a0a}
+.pf-preview-section-doc .pf-sig-block{margin-top:28px;display:flex;gap:32px;flex-wrap:wrap}
+.pf-preview-section-doc .pf-sig-col{flex:1;min-width:200px;font-size:12px;color:#444}
+.pf-preview-section-doc .pf-sig-col strong{color:#0a0a0a;font-size:12.5px}
+.pf-preview-section-doc .pf-sig-line{border-top:1px solid #999;margin-top:36px;padding-top:4px;font-size:10px;color:#888;text-transform:uppercase;letter-spacing:1px}
+.pf-preview-section-doc .pf-doc-footer{margin-top:18px;font-size:10.5px;color:#666;font-style:italic}
 </style>
 </head>
 <body>
@@ -452,7 +477,16 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 </div>
 </div>
 
-<p style="font-size:11px;color:var(--text3);margin-top:16px">Live preview + Review Summary land in commit 3. PDF export in commit 5.</p>
+<div class="pf-preview-header">
+<h2>Live preview</h2>
+<div class="pf-preview-legend">
+<span><i style="background:#fef3c7"></i>Yellow = override / custom</span>
+<span><i style="background:#fef3c7;border:1.5px solid #f59e0b"></i>Amber border = flagged for Brian</span>
+</div>
+</div>
+<div id="pf-preview" class="pf-preview-section-doc"></div>
+
+<p style="font-size:11px;color:var(--text3);margin-top:16px">Review Summary lands in commit 4. PDF export in commit 5.</p>
 </div>
 </div>
 
@@ -948,6 +982,141 @@ function PRsetFlags(text){
   PRu();
 }
 
+function PRescape(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function PRph(field,value,isCustom,flaggedNames){
+  var name=field;
+  var flagged=(PR.custom.review_flags||[]).some(function(f){return name.indexOf(f)>=0||(flaggedNames||[]).indexOf(f)>=0});
+  var hasVal=value!==''&&value!==null&&value!==undefined&&value!==0;
+  // Treat 0 as "unset" for numeric optional fields displayed via this helper; strings keep their truthiness check.
+  if(typeof value==='number'&&value===0)hasVal=false;
+  var cls='ph-empty',disp='___';
+  if(hasVal){
+    cls=flagged?'ph-flagged':(isCustom?'ph-custom':'ph-filled');
+    disp=PRescape(value);
+  }
+  return '<span class="ph '+cls+'" data-field="'+PRescape(field)+'">'+disp+'</span>';
+}
+
+function PRrenderPreview(){
+  var p=PR;
+  var fmtUSD=function(n){return '$'+(n||0).toLocaleString()};
+  var fmtPct=function(n){return (n||0)+'%'};
+  var fmtDate=function(s){return s||''};
+  var pkgDesc='';
+  var pkgIsCustom=false;
+  if(p.pricing_model==='legacy'&&p.license_package){
+    var monthly=PROPOSAL_RULES.TIER_MONTHLY_PRICE[p.license_package]||0;
+    var pkgLetter=p.license_package.charAt(0);
+    pkgDesc='Package '+pkgLetter+' — Core Product, $'+monthly.toLocaleString()+'/month';
+    if(p.add_ons.length){
+      var addonsTxt=p.add_ons.map(function(a){
+        var letter=a.charAt(0);
+        var amt=PROPOSAL_RULES.ADDON_MONTHLY_PRICE[a]||0;
+        var label=a==='D_play_for_rewards'?'Play-for-Rewards':'Marketing Analytics';
+        return letter+' — '+label+' (+$'+amt.toLocaleString()+'/mo)';
+      }).join('; ');
+      pkgDesc+='. Add-ons: '+addonsTxt;
+    }
+  } else if(p.pricing_model==='tier'&&p.tier){
+    pkgIsCustom=true;
+    var tName=p.tier.charAt(0).toUpperCase()+p.tier.slice(1);
+    pkgDesc=tName+' tier — $'+(p.fees.tier_acv_usd||0).toLocaleString()+'/year ACV';
+  }
+
+  var html='';
+  // Header paragraph
+  html+='<p>Lucra, Inc., a Delaware corporation with offices at 49 Chambers Street, Apt 14E, New York, NY, 10007 ("Lucra"), and '+
+    PRph('client_name',p.parties.client_name,false)+
+    ' ("Client") entered into this Agreement with an Effective Date of '+
+    PRph('effective_date',p.parties.effective_date,false)+
+    ' (the "Agreement"). The Agreement is subject to Lucra <a href="https://lucrasports.com/pages/terms-and-conditions.html" style="color:#0066cc">General Terms and Conditions</a> (password: Lucra2025). All capitalized terms not defined in this Agreement have the respective meanings set forth in the General Terms and Conditions.</p>';
+
+  // License Package
+  html+='<h3>License Package</h3>';
+  html+='<p>'+PRph('license_package',pkgDesc,pkgIsCustom)+'</p>';
+
+  // Fees table
+  html+='<h3>Fees</h3>';
+  html+='<table><tbody>';
+  html+='<tr><td>License Fee</td><td style="text-align:right">'+PRph('license_fee_annual_usd',fmtUSD(p.fees.license_fee_annual_usd)+'/year',p.fees.license_fee_overridden)+'</td></tr>';
+  html+='<tr><td>Discount</td><td style="text-align:right">'+PRph('discount_percent',fmtPct(p.fees.discount_percent),(p.fees.discount_percent||0)>0)+'</td></tr>';
+  var implDisp=p.fees.implementation_fee_waived?('Waived ('+fmtUSD(p.fees.implementation_fee_amount_usd)+' list)'):fmtUSD(p.fees.implementation_fee_amount_usd);
+  html+='<tr><td>Implementation Fee</td><td style="text-align:right">'+PRph('implementation_fee',implDisp,p.fees.implementation_fee_waived||(p.fees.implementation_fee_amount_usd||0)>0)+'</td></tr>';
+  html+='<tr style="border-top:1px solid #ccc;font-weight:600"><td style="padding-top:8px">Amount Due</td><td style="text-align:right;padding-top:8px">'+PRph('amount_due_usd',fmtUSD(p.fees.amount_due_usd),p.fees.amount_due_overridden)+'</td></tr>';
+  html+='</tbody></table>';
+
+  // Pass-through compliance
+  if(p.passthrough_legal_compliance){
+    html+='<h3>Pass-Through Legal &amp; Compliance Costs</h3>';
+    html+='<p>The Client agrees to reimburse Lucra for one hundred percent (100%) of its monthly usage costs payable to third parties associated with its Risk Management Toolkit. <em>Only applicable to users who engage with the Lucra SDK in a given month.</em> Typically ranges between $0.20-$0.60/month. Capped at $1.00/user/month. <strong>There is no Revenue to Lucra; these are 100% pass-through fees to its third-party vendors to run legal &amp; compliant real money games.</strong> These fees can also be charged to clients directly as a small service fee, or be viewed as a small customer-acquisition / marketing cost.</p>';
+  } else {
+    html+='<p style="color:#999;font-style:italic;font-size:11px;background:#fef3c7;padding:6px 10px;border-left:3px solid #f59e0b;border-radius:4px">[Pass-through legal &amp; compliance clause excluded — flag for Brian]</p>';
+  }
+
+  // Revenue Share + payment trigger
+  html+='<h3>Revenue Share &amp; Payment</h3>';
+  html+='<p>'+
+    PRph('revenue_share_client',p.revenue_share.client_percent+'% Client',false)+' / '+
+    PRph('revenue_share_lucra',p.revenue_share.lucra_percent+'% Lucra',false)+
+    ' on net-new revenue that Lucra helps to directly generate and is directly traceable.</p>';
+  var trigText='';
+  if(p.payment_trigger==='signature')trigText='Annual payment is due 30 days post-signature.';
+  else if(p.payment_trigger==='delivery')trigText='Annual payment is due at the earlier of 90 days post-signature or the Delivery date.';
+  else if(p.payment_trigger==='fundraise_milestone')trigText='Annual payment is due upon Client raising '+fmtUSD(p.milestone_amount_usd||0)+' or more in equity financing.';
+  html+='<p>'+PRph('payment_trigger',trigText,p.payment_trigger!=='signature')+'</p>';
+
+  // License Term
+  html+='<h3>License Term</h3>';
+  html+='<p>'+PRph('license_term_years',(p.license_term_years||1)+' year'+((p.license_term_years||1)>1?'s':''),false)+' commencing from the Effective Date.</p>';
+  html+='<p><strong>Subsequent Term:</strong> The parties will meet at least 90 days prior to the expiration of the License Term to discuss subsequent agreements.</p>';
+
+  // GTM / Launch
+  var hasGtmBlock=(p.gtm_support_usd||0)>0||p.kickoff_date||p.go_live_date||(p.launch_incentive.cost_reduction_percent||0)>0;
+  if(hasGtmBlock){
+    html+='<h3>Go-To-Market &amp; Launch</h3>';
+    if((p.gtm_support_usd||0)>0){
+      html+='<p><strong>Go-To-Market Support:</strong> '+PRph('gtm_support_usd',fmtUSD(p.gtm_support_usd),false)+' that will be reinvested into Client marketing strategy in the first three months post the Go-Live date, with Lucra to approve the use of funds.</p>';
+    }
+    if(p.kickoff_date){
+      html+='<p><strong>Kickoff Date:</strong> '+PRph('kickoff_date',fmtDate(p.kickoff_date),false)+'. Lucra will provide two weeks of engineering and product resources following the kickoff date.</p>';
+    }
+    if(p.go_live_date){
+      html+='<p><strong>Go-Live Date:</strong> '+PRph('go_live_date',fmtDate(p.go_live_date),false)+'</p>';
+    }
+    if((p.launch_incentive.cost_reduction_percent||0)>0){
+      html+='<p><strong>Launch Incentive:</strong> Ability to reduce costs by '+
+        PRph('launch_incentive_pct',fmtPct(p.launch_incentive.cost_reduction_percent),true)+
+        ' if launched by '+
+        PRph('launch_incentive_date',fmtDate(p.launch_incentive.launch_by_date),true)+'.</p>';
+    }
+  }
+
+  // Special Terms / Custom Clauses (always yellow-highlighted block)
+  if(p.custom.special_terms||p.custom.custom_clauses){
+    html+='<div class="pf-special-block">';
+    html+='<h3>Special Terms / Addendum</h3>';
+    if(p.custom.special_terms){
+      html+='<div class="pf-special-content">'+PRescape(p.custom.special_terms).replace(/\n/g,'<br>')+'</div>';
+    }
+    if(p.custom.custom_clauses){
+      html+='<div class="pf-special-content" style="margin-top:8px"><strong>Custom Clauses</strong><br>'+PRescape(p.custom.custom_clauses).replace(/\n/g,'<br>')+'</div>';
+    }
+    html+='</div>';
+  }
+
+  // Signature block
+  html+='<div class="pf-sig-block">';
+  html+='<div class="pf-sig-col"><strong>Lucra, Inc.</strong><div class="pf-sig-line">Name, Title — Signed</div></div>';
+  var clientNameDisp=p.parties.client_name||'[Client]';
+  var sigNameTitle=(p.parties.client_signatory_name||'Name')+', '+(p.parties.client_signatory_title||'Title');
+  html+='<div class="pf-sig-col"><strong>'+PRescape(clientNameDisp)+'</strong><div style="margin-top:4px">'+PRph('client_signatory',sigNameTitle,false)+'</div><div class="pf-sig-line">Signed</div></div>';
+  html+='</div>';
+
+  html+='<p class="pf-doc-footer">By signing this agreement, I agree to the Lucra General Terms and Conditions. IN WITNESS WHEREOF, the Parties have entered into this Agreement as of the Effective Date.</p>';
+
+  $('pf-preview').innerHTML=html;
+}
+
 function PRvalidate(){
   var errs=[];
   if(!PR.parties.client_name)errs.push('Client name is required');
@@ -986,6 +1155,7 @@ function PRu(){
   var errs=PRvalidate(),v=$('pf-validation');
   if(errs.length===0){v.style.display='none'}
   else{v.style.display='';v.innerHTML='<strong>Cannot generate proposal yet:</strong><ul>'+errs.map(function(e){return '<li>'+e+'</li>'}).join('')+'</ul>'}
+  PRrenderPreview();
 }
 
 PRu();
