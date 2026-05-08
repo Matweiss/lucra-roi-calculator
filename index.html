@@ -493,13 +493,18 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 
 <div class="pf-section" style="margin-top:14px">
 <div class="pf-section-title">Generate filled agreement</div>
-<p style="font-size:12px;color:var(--text2);margin-bottom:10px">Copy the prompt below and paste into Gemini chat (with the <a href="https://docs.google.com/document/d/1GSpH8psIDJgIrDF1XnEYpLf0MOShpSF3buA51Nj79G0/edit" target="_blank" style="color:var(--green)">Lucra template doc</a> attached). Gemini will produce a filled copy of the agreement, with yellow highlighting on overrides and custom clauses.</p>
+<p style="font-size:12px;color:var(--text2);margin-bottom:10px"><strong>Workflow A — Gemini in the sidebar:</strong> Open a copy of the <a href="https://docs.google.com/document/d/1GSpH8psIDJgIrDF1XnEYpLf0MOShpSF3buA51Nj79G0/edit" target="_blank" style="color:var(--green)">Lucra template</a>, open the Gemini sidebar inside it, paste the prompt. Gemini will find-and-replace the placeholders in place.</p>
 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-<button class="pf-radio on" onclick="PRcopyGeminiPrompt()" style="padding:10px 18px;font-weight:600">📋 Copy Gemini prompt</button>
+<button class="pf-radio on" onclick="PRcopyGeminiPrompt()" style="padding:10px 18px;font-weight:600">📋 Copy Gemini sidebar prompt</button>
 <button class="pf-radio" onclick="PRtogglePreviewPrompt()" style="padding:10px 14px">Preview prompt</button>
+</div>
+<pre id="pf-prompt-preview" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:11px;font-family:var(--mono);color:var(--text2);max-height:280px;overflow:auto;white-space:pre-wrap;line-height:1.5;margin-bottom:14px"></pre>
+
+<p style="font-size:12px;color:var(--text2);margin:14px 0 10px"><strong>Workflow B — Clawd creates the doc:</strong> Click below, paste the JSON into a Clawd chat. Clawd will clone the template, fill in the values, and return the URL of the new Google Doc.</p>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+<button class="pf-radio" onclick="PRcopyClawdJson()" style="padding:10px 18px;font-weight:600">📋 Copy data for Clawd (JSON)</button>
 <span id="pf-copy-status" style="font-size:12px;color:var(--text3)"></span>
 </div>
-<pre id="pf-prompt-preview" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:11px;font-family:var(--mono);color:var(--text2);max-height:280px;overflow:auto;white-space:pre-wrap;line-height:1.5"></pre>
 </div>
 
 <p style="font-size:11px;color:var(--text3);margin-top:16px">Review Summary panel lands in commit 5. Direct PDF export in commit 6.</p>
@@ -1058,16 +1063,15 @@ function PRgenerateGeminiPrompt(){
   var p=PR;
   var fmtUSD=function(n){return '$'+(n||0).toLocaleString()};
   var L=[];
-  L.push('You are creating a filled Lucra Sports agreement based on the template document at:');
-  L.push('https://docs.google.com/document/d/1GSpH8psIDJgIrDF1XnEYpLf0MOShpSF3buA51Nj79G0/edit');
+  L.push('You are operating inside an open Google Doc that contains the Lucra Sports agreement template. Edit this document in place.');
   L.push('');
   L.push('INSTRUCTIONS:');
-  L.push('1. Open the template, then File → Make a copy. Name the copy: "Lucra Agreement — '+(p.parties.client_name||'[Client]')+' — '+(p.parties.effective_date||PRtoday())+'"');
-  L.push('2. Fill in the placeholders below with the values provided. Preserve all original formatting (fonts, sizes, table structures).');
-  L.push('3. For values marked [OVERRIDE] or [CUSTOM], apply YELLOW HIGHLIGHT background to that value after replacing. Standard derived values stay unhighlighted.');
-  L.push('4. For Special Terms and Custom Clauses, append a new section titled "Special Terms / Addendum" at the end of the agreement (before the signature block). Place that content there with yellow highlighting.');
-  L.push('5. Do NOT modify any text outside the placeholders.');
-  L.push('6. Return the share URL of the new copy.');
+  L.push('1. Find each placeholder in the document body and replace it with the value listed below. Underscored blanks like "________" are the placeholders. Preserve all original formatting (fonts, sizes, table structures).');
+  L.push('2. For values marked [OVERRIDE] or [CUSTOM], apply YELLOW HIGHLIGHT background to that value after replacing. Standard derived values stay unhighlighted.');
+  L.push('3. If "Special Terms" or "Custom Clauses" are provided, insert a new section titled "Special Terms / Addendum" before the signature block at the end of the document. Place that content there with yellow highlighting.');
+  L.push('4. If revenue share, payment trigger, or pass-through compliance values differ from the template defaults, update those clauses to match.');
+  L.push('5. Do NOT modify any text outside the placeholders or instructed sections.');
+  L.push('6. After editing, briefly confirm what you changed.');
   L.push('');
   L.push('═══ VALUES TO FILL ═══');
   L.push('');
@@ -1179,6 +1183,50 @@ function PRtogglePreviewPrompt(){
     pre.style.display='block';
   } else {
     pre.style.display='none';
+  }
+}
+
+function PRcopyClawdJson(){
+  // Structured payload Clawd can paste into gog docs commands.
+  // Includes a clear instruction header so Clawd knows what to do with it.
+  var p=PR;
+  var payload={
+    instruction:'Clone the Lucra agreement template doc (1GSpH8psIDJgIrDF1XnEYpLf0MOShpSF3buA51Nj79G0) named "Lucra Agreement — '+(p.parties.client_name||'[Client]')+' — '+(p.parties.effective_date||PRtoday())+'", run gog docs find-replace to fill the placeholders with the values below, and return the new doc URL. Apply yellow highlighting to any values flagged isCustom=true via the formatting commands. Append a Special Terms / Addendum section at the end (before signature block) for any special_terms or custom_clauses.',
+    template_doc_id:'1GSpH8psIDJgIrDF1XnEYpLf0MOShpSF3buA51Nj79G0',
+    parties:p.parties,
+    pricing_model:p.pricing_model,
+    license_packages:p.license_packages,
+    add_ons:p.add_ons,
+    tier:p.tier,
+    implementation_tier:p.implementation_tier,
+    fees:p.fees,
+    passthrough_legal_compliance:p.passthrough_legal_compliance,
+    revenue_share:p.revenue_share,
+    license_term_years:p.license_term_years,
+    payment_trigger:p.payment_trigger,
+    milestone_amount_usd:p.milestone_amount_usd,
+    gtm_support_usd:p.gtm_support_usd,
+    kickoff_date:p.kickoff_date,
+    go_live_date:p.go_live_date,
+    launch_incentive:p.launch_incentive,
+    custom:p.custom,
+    package_labels:PROPOSAL_RULES.PACKAGE_LABEL,
+    package_monthly_prices:PROPOSAL_RULES.TIER_MONTHLY_PRICE,
+    addon_labels:PROPOSAL_RULES.ADDON_LABEL,
+    addon_monthly_prices:PROPOSAL_RULES.ADDON_MONTHLY_PRICE,
+    implementation_tier_labels:PROPOSAL_RULES.IMPLEMENTATION_TIER_LABEL,
+    implementation_tier_descriptions:PROPOSAL_RULES.IMPLEMENTATION_TIER_DESCRIPTION,
+    implementation_tier_prices:PROPOSAL_RULES.IMPLEMENTATION_TIER_PRICE
+  };
+  var json=JSON.stringify(payload,null,2);
+  var status=$('pf-copy-status');
+  var done=function(ok,msg){if(status){status.textContent=ok?'✓ '+msg:'⚠ '+msg;status.style.color=ok?'var(--green)':'var(--red)';setTimeout(function(){status.textContent=''},3500)}};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(json).then(function(){done(true,'Copied JSON. Paste into Clawd chat.')}).catch(function(e){done(false,'Copy failed: '+e.message)});
+  } else {
+    var ta=document.createElement('textarea');ta.value=json;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');done(true,'Copied (fallback)')}catch(e){done(false,'Copy not supported')}
+    document.body.removeChild(ta);
   }
 }
 
