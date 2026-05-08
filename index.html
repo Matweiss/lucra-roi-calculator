@@ -342,11 +342,11 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 </div>
 <div id="pf-legacy" style="margin-top:12px">
 <div class="pf-row">
-<div class="pf-label">License package *</div>
+<div class="pf-label">License packages * (multi-select)</div>
 <div class="pf-radio-group" id="pf-pkg-group">
-<button class="pf-radio" data-pkg="A_core_10k" onclick="PRsetPkg('A_core_10k')">A — Core ($10K/mo)</button>
-<button class="pf-radio" data-pkg="B_core_10k" onclick="PRsetPkg('B_core_10k')">B — Core ($10K/mo)</button>
-<button class="pf-radio" data-pkg="C_core_15k" onclick="PRsetPkg('C_core_15k')">C — Core ($15K/mo)</button>
+<button class="pf-radio" data-pkg="A_core_10k" onclick="PRtogglePkg('A_core_10k')">A — Core ($10K/mo)</button>
+<button class="pf-radio" data-pkg="B_core_10k" onclick="PRtogglePkg('B_core_10k')">B — Core ($10K/mo)</button>
+<button class="pf-radio" data-pkg="C_core_15k" onclick="PRtogglePkg('C_core_15k')">C — Core ($15K/mo)</button>
 </div>
 </div>
 <div class="pf-row">
@@ -374,30 +374,35 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 </div>
 
 <div class="pf-section">
+<div class="pf-section-title">Implementation tier (one-time fee at signing)</div>
+<div class="pf-radio-group" id="pf-impl-tier-group">
+<button class="pf-radio" data-impl="G_strategic" onclick="PRsetImplTier('G_strategic')">G — Strategic ($50K)</button>
+<button class="pf-radio" data-impl="H_growth" onclick="PRsetImplTier('H_growth')">H — Growth ($30K)</button>
+<button class="pf-radio" data-impl="I_launch" onclick="PRsetImplTier('I_launch')">I — Launch ($10K)</button>
+</div>
+<div class="pf-row" style="margin-top:10px">
+<div class="pf-label">Implementation fee (numeric or "Waived")</div>
+<input class="pf-input" type="text" id="pf-impl-fee" placeholder="50000 or Waived" value="" oninput="PRsetImplFee(this.value)">
+</div>
+</div>
+
+<div class="pf-section">
 <div class="pf-section-title">Fees</div>
-<div class="pf-row pf-row-2col">
-<div>
-<div class="pf-label">License fee (annual)<span class="pf-derived" id="pf-license-derived"></span></div>
+<div class="pf-row">
+<div class="pf-label">License fee (annual, undiscounted)<span class="pf-derived" id="pf-license-derived"></span></div>
 <input class="pf-input" type="number" id="pf-license-fee" min="0" step="100" oninput="PRoverrideLicense(+this.value||0)">
 </div>
-<div>
-<div class="pf-label">Discount %</div>
-<input class="pf-input" type="number" id="pf-discount" min="0" max="100" step="1" value="0" oninput="PRset('fees.discount_percent',+this.value||0)">
-</div>
-</div>
 <div class="pf-row pf-row-2col">
 <div>
-<div class="pf-label">Implementation fee</div>
-<input class="pf-input" type="number" id="pf-impl-fee" min="0" step="100" value="0" oninput="PRset('fees.implementation_fee_amount_usd',+this.value||0)">
+<div class="pf-label">Discount %</div>
+<input class="pf-input" type="number" id="pf-discount" min="0" max="100" step="1" value="0" oninput="PRsetDiscount(+this.value||0)">
 </div>
 <div>
-<label class="pf-checkbox"><input type="checkbox" id="pf-impl-waived" checked onchange="PRset('fees.implementation_fee_waived',this.checked)"> Waive implementation fee</label>
+<div class="pf-label">Amount due, Year 1 (discounted total + impl)<span class="pf-derived" id="pf-due-derived"></span></div>
+<input class="pf-input" type="number" id="pf-amount-due" min="0" step="100" oninput="PRsetAmountDue(+this.value||0)">
 </div>
 </div>
-<div class="pf-row">
-<div class="pf-label">Amount due, Year 1<span class="pf-derived" id="pf-due-derived"></span></div>
-<input class="pf-input" type="number" id="pf-amount-due" min="0" step="100" oninput="PRoverrideDue(+this.value||0)">
-</div>
+<p style="font-size:11px;color:var(--text3);margin-top:4px">Edit either Discount or Amount Due; the other recalculates automatically.</p>
 </div>
 
 <div class="pf-section">
@@ -841,40 +846,53 @@ function checkPDFReady() {
 initP();sync();U();
 
 /* ─── PROPOSAL BUILDER ─────────────────────────────────────────────── */
+function PRtoday(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
+
 var PROPOSAL_RULES={
   TIER_MONTHLY_PRICE:{A_core_10k:10000,B_core_10k:10000,C_core_15k:15000},
+  PACKAGE_LABEL:{A_core_10k:'A',B_core_10k:'B',C_core_15k:'C'},
   ADDON_MONTHLY_PRICE:{D_play_for_rewards:5000,E_marketing_analytics:5000},
+  ADDON_LABEL:{D_play_for_rewards:'D — Play-for-Rewards',E_marketing_analytics:'E — Marketing Analytics'},
   TIER_FRAMEWORK_DEFAULT_ACV:{launch:36000,growth:90000,strategic:150000},
-  TIER_FRAMEWORK_DEFAULT_IMPL:{launch:7500,growth:20000,strategic:40000},
-  defaultLicenseFeeAnnual:function(model,pkg,addons,tier,tierAcv,discountPct){
-    var monthly=0,annual=0;
-    if(model==='legacy'){
-      monthly=PROPOSAL_RULES.TIER_MONTHLY_PRICE[pkg]||0;
-      (addons||[]).forEach(function(a){monthly+=PROPOSAL_RULES.ADDON_MONTHLY_PRICE[a]||0});
-      annual=monthly*12;
-    } else {
-      annual=tierAcv||PROPOSAL_RULES.TIER_FRAMEWORK_DEFAULT_ACV[tier]||0;
-    }
-    return Math.round(annual*(1-(discountPct||0)/100));
+  IMPLEMENTATION_TIER_PRICE:{G_strategic:50000,H_growth:30000,I_launch:10000},
+  IMPLEMENTATION_TIER_LABEL:{G_strategic:'G — Strategic',H_growth:'H — Growth',I_launch:'I — Launch'},
+  IMPLEMENTATION_TIER_DESCRIPTION:{
+    G_strategic:'Custom, end-to-end implementation including dedicated project management, custom API integration, priority technical support, and on-site launch assistance for rollouts.',
+    H_growth:'Comprehensive onboarding with enhanced customization, priority technical support, and dedicated implementation resources to optimize your multi-venue rollout.',
+    I_launch:'Fast-track setup designed to get your venues live quickly with essential platform configuration, standard integrations, and self-service support resources.'
   },
-  defaultAmountDue:function(licenseAnn,implFee,waived){
-    return Math.round((licenseAnn||0)+(waived?0:(implFee||0)));
+  // License fee = sum of selected packages + addons (annual, undiscounted)
+  defaultLicenseFeeAnnual:function(model,packages,addons,tier,tierAcv){
+    if(model==='legacy'){
+      var monthly=0;
+      (packages||[]).forEach(function(p){monthly+=PROPOSAL_RULES.TIER_MONTHLY_PRICE[p]||0});
+      (addons||[]).forEach(function(a){monthly+=PROPOSAL_RULES.ADDON_MONTHLY_PRICE[a]||0});
+      return monthly*12;
+    }
+    return tierAcv||PROPOSAL_RULES.TIER_FRAMEWORK_DEFAULT_ACV[tier]||0;
+  },
+  // Amount due = license_fee discounted + impl_fee (unless waived)
+  defaultAmountDue:function(licenseAnn,discountPct,implFee,implWaived){
+    var discounted=(licenseAnn||0)*(1-(discountPct||0)/100);
+    return Math.round(discounted+(implWaived?0:(implFee||0)));
   }
 };
 
 var PR={
-  parties:{client_name:'',effective_date:'',client_signatory_name:'',client_signatory_title:''},
+  parties:{client_name:'',effective_date:PRtoday(),client_signatory_name:'',client_signatory_title:''},
   pricing_model:'legacy',
-  license_package:'',
+  license_packages:[],
   add_ons:[],
   tier:'',
+  implementation_tier:'',
   fees:{
     tier_acv_usd:0,
     license_fee_annual_usd:0,
     license_fee_overridden:false,
     discount_percent:0,
     implementation_fee_amount_usd:0,
-    implementation_fee_waived:true,
+    implementation_fee_waived:false,
+    implementation_fee_text:'',
     amount_due_usd:0,
     amount_due_overridden:false
   },
@@ -894,11 +912,7 @@ function PRset(path,value){
   var parts=path.split('.'),obj=PR;
   for(var i=0;i<parts.length-1;i++)obj=obj[parts[i]];
   obj[parts[parts.length-1]]=value;
-  // If user edits inputs that affect derivation, clear override flags so they re-derive
-  if(path==='fees.discount_percent'||path==='fees.implementation_fee_amount_usd'||path==='fees.implementation_fee_waived'||path==='fees.tier_acv_usd'){
-    if(path!=='fees.implementation_fee_amount_usd'&&path!=='fees.implementation_fee_waived')PR.fees.license_fee_overridden=false;
-    PR.fees.amount_due_overridden=false;
-  }
+  if(path==='fees.tier_acv_usd')PR.fees.license_fee_overridden=false;
   PRu();
 }
 
@@ -912,11 +926,12 @@ function PRsetModel(model){
   PRu();
 }
 
-function PRsetPkg(pkg){
-  PR.license_package=pkg;
+function PRtogglePkg(pkg){
+  var idx=PR.license_packages.indexOf(pkg);
+  if(idx>=0)PR.license_packages.splice(idx,1);else PR.license_packages.push(pkg);
   PR.fees.license_fee_overridden=false;
   PR.fees.amount_due_overridden=false;
-  document.querySelectorAll('#pf-pkg-group .pf-radio').forEach(function(b){b.classList.toggle('on',b.dataset.pkg===pkg)});
+  document.querySelectorAll('#pf-pkg-group .pf-radio').forEach(function(b){b.classList.toggle('on',PR.license_packages.indexOf(b.dataset.pkg)>=0)});
   PRu();
 }
 
@@ -935,11 +950,40 @@ function PRsetTier(tier){
   PR.fees.amount_due_overridden=false;
   document.querySelectorAll('#pf-tier-group .pf-radio').forEach(function(b){b.classList.toggle('on',b.dataset.tier===tier)});
   var defAcv=PROPOSAL_RULES.TIER_FRAMEWORK_DEFAULT_ACV[tier]||0;
-  var defImpl=PROPOSAL_RULES.TIER_FRAMEWORK_DEFAULT_IMPL[tier]||0;
   PR.fees.tier_acv_usd=defAcv;
-  PR.fees.implementation_fee_amount_usd=defImpl;
   $('pf-tier-acv').value=defAcv||'';
-  $('pf-impl-fee').value=defImpl||'';
+  PRu();
+}
+
+function PRsetImplTier(tier){
+  PR.implementation_tier=tier;
+  document.querySelectorAll('#pf-impl-tier-group .pf-radio').forEach(function(b){b.classList.toggle('on',b.dataset.impl===tier)});
+  var price=PROPOSAL_RULES.IMPLEMENTATION_TIER_PRICE[tier]||0;
+  PR.fees.implementation_fee_amount_usd=price;
+  PR.fees.implementation_fee_waived=false;
+  PR.fees.implementation_fee_text='';
+  PR.fees.amount_due_overridden=false;
+  $('pf-impl-fee').value=price?String(price):'';
+  PRu();
+}
+
+function PRsetImplFee(text){
+  text=(text||'').trim();
+  PR.fees.amount_due_overridden=false;
+  if(/^waived$/i.test(text)){
+    PR.fees.implementation_fee_waived=true;
+    PR.fees.implementation_fee_text='Waived';
+    PR.fees.implementation_fee_amount_usd=0;
+  } else if(text===''){
+    PR.fees.implementation_fee_waived=false;
+    PR.fees.implementation_fee_text='';
+    PR.fees.implementation_fee_amount_usd=0;
+  } else {
+    var num=parseFloat(text.replace(/[^0-9.]/g,''));
+    PR.fees.implementation_fee_waived=false;
+    PR.fees.implementation_fee_text='';
+    PR.fees.implementation_fee_amount_usd=isNaN(num)?0:num;
+  }
   PRu();
 }
 
@@ -971,7 +1015,24 @@ function PRoverrideLicense(value){
   PRu();
 }
 
-function PRoverrideDue(value){
+// Bidirectional discount/amount-due math
+function PRsetDiscount(pct){
+  PR.fees.discount_percent=Math.max(0,Math.min(100,pct||0));
+  PR.fees.amount_due_overridden=false;
+  PRu();
+}
+
+function PRsetAmountDue(value){
+  // Back-derive discount % from amount due
+  var lf=PR.fees.license_fee_annual_usd||0;
+  var implActual=PR.fees.implementation_fee_waived?0:(PR.fees.implementation_fee_amount_usd||0);
+  if(lf>0){
+    var licensePart=Math.max(0,(value||0)-implActual);
+    var newDiscPct=Math.round((1-licensePart/lf)*100);
+    newDiscPct=Math.max(0,Math.min(100,newDiscPct));
+    PR.fees.discount_percent=newDiscPct;
+    var d=$('pf-discount');if(d&&document.activeElement!==d)d.value=newDiscPct;
+  }
   PR.fees.amount_due_usd=value;
   PR.fees.amount_due_overridden=true;
   PRu();
@@ -1004,23 +1065,25 @@ function PRrenderPreview(){
   var fmtDate=function(s){return s||''};
   var pkgDesc='';
   var pkgIsCustom=false;
-  if(p.pricing_model==='legacy'&&p.license_package){
-    var monthly=PROPOSAL_RULES.TIER_MONTHLY_PRICE[p.license_package]||0;
-    var pkgLetter=p.license_package.charAt(0);
-    pkgDesc='Package '+pkgLetter+' — Core Product, $'+monthly.toLocaleString()+'/month';
+  if(p.pricing_model==='legacy'&&p.license_packages.length){
+    var pkgParts=p.license_packages.map(function(pk){
+      var monthly=PROPOSAL_RULES.TIER_MONTHLY_PRICE[pk]||0;
+      return 'Package '+PROPOSAL_RULES.PACKAGE_LABEL[pk]+' ($'+monthly.toLocaleString()+'/mo)';
+    });
+    pkgDesc=pkgParts.join(' + ');
     if(p.add_ons.length){
-      var addonsTxt=p.add_ons.map(function(a){
-        var letter=a.charAt(0);
-        var amt=PROPOSAL_RULES.ADDON_MONTHLY_PRICE[a]||0;
-        var label=a==='D_play_for_rewards'?'Play-for-Rewards':'Marketing Analytics';
-        return letter+' — '+label+' (+$'+amt.toLocaleString()+'/mo)';
-      }).join('; ');
+      var addonsTxt=p.add_ons.map(function(a){return PROPOSAL_RULES.ADDON_LABEL[a]+' (+$'+(PROPOSAL_RULES.ADDON_MONTHLY_PRICE[a]||0).toLocaleString()+'/mo)'}).join('; ');
       pkgDesc+='. Add-ons: '+addonsTxt;
     }
   } else if(p.pricing_model==='tier'&&p.tier){
     pkgIsCustom=true;
     var tName=p.tier.charAt(0).toUpperCase()+p.tier.slice(1);
     pkgDesc=tName+' tier — $'+(p.fees.tier_acv_usd||0).toLocaleString()+'/year ACV';
+  }
+  // Implementation tier description
+  var implDescription='';
+  if(p.implementation_tier){
+    implDescription=PROPOSAL_RULES.IMPLEMENTATION_TIER_LABEL[p.implementation_tier]+': '+PROPOSAL_RULES.IMPLEMENTATION_TIER_DESCRIPTION[p.implementation_tier];
   }
 
   var html='';
@@ -1035,14 +1098,21 @@ function PRrenderPreview(){
   html+='<h3>License Package</h3>';
   html+='<p>'+PRph('license_package',pkgDesc,pkgIsCustom)+'</p>';
 
+  // Implementation tier description (above fees)
+  if(implDescription){
+    html+='<h3>Implementation</h3>';
+    html+='<p>'+PRph('implementation_tier',implDescription,true)+'</p>';
+  }
+
   // Fees table
   html+='<h3>Fees</h3>';
   html+='<table><tbody>';
-  html+='<tr><td>License Fee</td><td style="text-align:right">'+PRph('license_fee_annual_usd',fmtUSD(p.fees.license_fee_annual_usd)+'/year',p.fees.license_fee_overridden)+'</td></tr>';
+  html+='<tr><td>License Fee (annual, undiscounted)</td><td style="text-align:right">'+PRph('license_fee_annual_usd',fmtUSD(p.fees.license_fee_annual_usd)+'/year',p.fees.license_fee_overridden)+'</td></tr>';
   html+='<tr><td>Discount</td><td style="text-align:right">'+PRph('discount_percent',fmtPct(p.fees.discount_percent),(p.fees.discount_percent||0)>0)+'</td></tr>';
-  var implDisp=p.fees.implementation_fee_waived?('Waived ('+fmtUSD(p.fees.implementation_fee_amount_usd)+' list)'):fmtUSD(p.fees.implementation_fee_amount_usd);
-  html+='<tr><td>Implementation Fee</td><td style="text-align:right">'+PRph('implementation_fee',implDisp,p.fees.implementation_fee_waived||(p.fees.implementation_fee_amount_usd||0)>0)+'</td></tr>';
-  html+='<tr style="border-top:1px solid #ccc;font-weight:600"><td style="padding-top:8px">Amount Due</td><td style="text-align:right;padding-top:8px">'+PRph('amount_due_usd',fmtUSD(p.fees.amount_due_usd),p.fees.amount_due_overridden)+'</td></tr>';
+  var implDisp=p.fees.implementation_fee_waived?'Waived':fmtUSD(p.fees.implementation_fee_amount_usd);
+  var implIsCustom=p.fees.implementation_fee_waived||(p.fees.implementation_fee_amount_usd||0)>0;
+  html+='<tr><td>Implementation Fee</td><td style="text-align:right">'+PRph('implementation_fee',implDisp,implIsCustom)+'</td></tr>';
+  html+='<tr style="border-top:1px solid #ccc;font-weight:600"><td style="padding-top:8px">Amount Due (Year 1)</td><td style="text-align:right;padding-top:8px">'+PRph('amount_due_usd',fmtUSD(p.fees.amount_due_usd),p.fees.amount_due_overridden)+'</td></tr>';
   html+='</tbody></table>';
 
   // Pass-through compliance
@@ -1121,7 +1191,7 @@ function PRvalidate(){
   var errs=[];
   if(!PR.parties.client_name)errs.push('Client name is required');
   if(!PR.parties.effective_date)errs.push('Effective date is required');
-  if(PR.pricing_model==='legacy'&&!PR.license_package)errs.push('Pick a license package (A, B, or C)');
+  if(PR.pricing_model==='legacy'&&!PR.license_packages.length)errs.push('Pick at least one license package (A, B, or C)');
   if(PR.pricing_model==='tier'&&!PR.tier)errs.push('Pick a tier (Launch, Growth, or Strategic)');
   if(!PR.license_term_years||PR.license_term_years<1)errs.push('License term (years) is required');
   var rsTotal=(PR.revenue_share.client_percent||0)+(PR.revenue_share.lucra_percent||0);
@@ -1133,24 +1203,24 @@ function PRvalidate(){
 }
 
 function PRu(){
+  // License fee = sum of selected packages + addons (annual, undiscounted), unless manually overridden
   if(!PR.fees.license_fee_overridden){
     PR.fees.license_fee_annual_usd=PROPOSAL_RULES.defaultLicenseFeeAnnual(
-      PR.pricing_model,PR.license_package,PR.add_ons,PR.tier,PR.fees.tier_acv_usd,PR.fees.discount_percent
+      PR.pricing_model,PR.license_packages,PR.add_ons,PR.tier,PR.fees.tier_acv_usd
     );
     var lf=$('pf-license-fee');if(lf&&document.activeElement!==lf)lf.value=PR.fees.license_fee_annual_usd||'';
   }
+  // Amount due = license_fee discounted + impl_fee (unless waived), unless rep typed it directly
   if(!PR.fees.amount_due_overridden){
     PR.fees.amount_due_usd=PROPOSAL_RULES.defaultAmountDue(
-      PR.fees.license_fee_annual_usd,PR.fees.implementation_fee_amount_usd,PR.fees.implementation_fee_waived
+      PR.fees.license_fee_annual_usd,PR.fees.discount_percent,PR.fees.implementation_fee_amount_usd,PR.fees.implementation_fee_waived
     );
     var ad=$('pf-amount-due');if(ad&&document.activeElement!==ad)ad.value=PR.fees.amount_due_usd||'';
   }
   $('pf-license-derived').textContent=PR.fees.license_fee_overridden?'(overridden)':'(derived)';
   $('pf-due-derived').textContent=PR.fees.amount_due_overridden?'(overridden)':'(derived)';
   $('pf-t-license').textContent=F(PR.fees.license_fee_annual_usd||0);
-  $('pf-t-impl').textContent=PR.fees.implementation_fee_waived
-    ?'(waived) '+F(PR.fees.implementation_fee_amount_usd||0)
-    :F(PR.fees.implementation_fee_amount_usd||0);
+  $('pf-t-impl').textContent=PR.fees.implementation_fee_waived?'Waived':F(PR.fees.implementation_fee_amount_usd||0);
   $('pf-t-due').textContent=F(PR.fees.amount_due_usd||0);
   var errs=PRvalidate(),v=$('pf-validation');
   if(errs.length===0){v.style.display='none'}
@@ -1158,6 +1228,10 @@ function PRu(){
   PRrenderPreview();
 }
 
+// Initialize: prefill effective date with today
+(function(){
+  var ed=$('pf-effective-date');if(ed)ed.value=PR.parties.effective_date;
+})();
 PRu();
 </script>
 </body>
