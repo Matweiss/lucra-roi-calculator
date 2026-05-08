@@ -500,7 +500,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 </div>
 <pre id="pf-prompt-preview" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:11px;font-family:var(--mono);color:var(--text2);max-height:280px;overflow:auto;white-space:pre-wrap;line-height:1.5;margin-bottom:14px"></pre>
 
-<p style="font-size:12px;color:var(--text2);margin:14px 0 10px"><strong>Workflow B — Clawd creates the doc:</strong> Click below, paste the JSON into a Clawd chat. Clawd will clone the template, fill in the values, and return the URL of the new Google Doc.</p>
+<p style="font-size:12px;color:var(--text2);margin:14px 0 10px"><strong>Workflow B — Clawd creates the doc:</strong> Click below, paste the JSON into a Clawd chat. Clawd will <strong>duplicate the master template</strong> (template itself stays untouched), fill in the values on the duplicate, and return the URL of the new Google Doc.</p>
 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
 <button class="pf-radio" onclick="PRcopyClawdJson()" style="padding:10px 18px;font-weight:600">📋 Copy data for Clawd (JSON)</button>
 <span id="pf-copy-status" style="font-size:12px;color:var(--text3)"></span>
@@ -1191,7 +1191,7 @@ function PRcopyClawdJson(){
   // Includes a clear instruction header so Clawd knows what to do with it.
   var p=PR;
   var payload={
-    instruction:'Clone the Lucra agreement template doc (1GSpH8psIDJgIrDF1XnEYpLf0MOShpSF3buA51Nj79G0) named "Lucra Agreement — '+(p.parties.client_name||'[Client]')+' — '+(p.parties.effective_date||PRtoday())+'", run gog docs find-replace to fill the placeholders with the values below, and return the new doc URL. Apply yellow highlighting to any values flagged isCustom=true via the formatting commands. Append a Special Terms / Addendum section at the end (before signature block) for any special_terms or custom_clauses.',
+    instruction:'Duplicate the master Lucra agreement template doc (id 1GSpH8psIDJgIrDF1XnEYpLf0MOShpSF3buA51Nj79G0) using `gog docs copy` with the title "Lucra Agreement — '+(p.parties.client_name||'[Client]')+' — '+(p.parties.effective_date||PRtoday())+'". The MASTER TEMPLATE MUST NOT BE MODIFIED — work only on the duplicate. Run gog docs find-replace on the duplicate to fill the placeholders with the values below, then return the URL of the new doc. Apply yellow highlighting to any overridden or [CUSTOM]-marked values. Append a Special Terms / Addendum section at the end (before signature block) for any special_terms or custom_clauses.',
     template_doc_id:'1GSpH8psIDJgIrDF1XnEYpLf0MOShpSF3buA51Nj79G0',
     parties:p.parties,
     pricing_model:p.pricing_model,
