@@ -491,7 +491,18 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 </div>
 <div id="pf-preview" class="pf-preview-section-doc"></div>
 
-<p style="font-size:11px;color:var(--text3);margin-top:16px">Review Summary lands in commit 4. PDF export in commit 5.</p>
+<div class="pf-section" style="margin-top:14px">
+<div class="pf-section-title">Generate filled agreement</div>
+<p style="font-size:12px;color:var(--text2);margin-bottom:10px">Copy the prompt below and paste into Gemini chat (with the <a href="https://docs.google.com/document/d/1GSpH8psIDJgIrDF1XnEYpLf0MOShpSF3buA51Nj79G0/edit" target="_blank" style="color:var(--green)">Lucra template doc</a> attached). Gemini will produce a filled copy of the agreement, with yellow highlighting on overrides and custom clauses.</p>
+<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+<button class="pf-radio on" onclick="PRcopyGeminiPrompt()" style="padding:10px 18px;font-weight:600">📋 Copy Gemini prompt</button>
+<button class="pf-radio" onclick="PRtogglePreviewPrompt()" style="padding:10px 14px">Preview prompt</button>
+<span id="pf-copy-status" style="font-size:12px;color:var(--text3)"></span>
+</div>
+<pre id="pf-prompt-preview" style="display:none;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;font-size:11px;font-family:var(--mono);color:var(--text2);max-height:280px;overflow:auto;white-space:pre-wrap;line-height:1.5"></pre>
+</div>
+
+<p style="font-size:11px;color:var(--text3);margin-top:16px">Review Summary panel lands in commit 5. Direct PDF export in commit 6.</p>
 </div>
 </div>
 
@@ -1041,6 +1052,134 @@ function PRsetAmountDue(value){
 function PRsetFlags(text){
   PR.custom.review_flags=text.split(',').map(function(s){return s.trim()}).filter(Boolean);
   PRu();
+}
+
+function PRgenerateGeminiPrompt(){
+  var p=PR;
+  var fmtUSD=function(n){return '$'+(n||0).toLocaleString()};
+  var L=[];
+  L.push('You are creating a filled Lucra Sports agreement based on the template document at:');
+  L.push('https://docs.google.com/document/d/1GSpH8psIDJgIrDF1XnEYpLf0MOShpSF3buA51Nj79G0/edit');
+  L.push('');
+  L.push('INSTRUCTIONS:');
+  L.push('1. Open the template, then File → Make a copy. Name the copy: "Lucra Agreement — '+(p.parties.client_name||'[Client]')+' — '+(p.parties.effective_date||PRtoday())+'"');
+  L.push('2. Fill in the placeholders below with the values provided. Preserve all original formatting (fonts, sizes, table structures).');
+  L.push('3. For values marked [OVERRIDE] or [CUSTOM], apply YELLOW HIGHLIGHT background to that value after replacing. Standard derived values stay unhighlighted.');
+  L.push('4. For Special Terms and Custom Clauses, append a new section titled "Special Terms / Addendum" at the end of the agreement (before the signature block). Place that content there with yellow highlighting.');
+  L.push('5. Do NOT modify any text outside the placeholders.');
+  L.push('6. Return the share URL of the new copy.');
+  L.push('');
+  L.push('═══ VALUES TO FILL ═══');
+  L.push('');
+  L.push('PARTIES:');
+  L.push('  Client name: '+(p.parties.client_name||'___'));
+  L.push('  Effective date: '+(p.parties.effective_date||'___'));
+  if(p.parties.client_signatory_name||p.parties.client_signatory_title){
+    L.push('  Signatory: '+(p.parties.client_signatory_name||'Name')+', '+(p.parties.client_signatory_title||'Title'));
+  }
+  L.push('');
+  L.push('LICENSE PACKAGE:');
+  if(p.pricing_model==='legacy'&&p.license_packages.length){
+    var pkgs=p.license_packages.map(function(pk){return PROPOSAL_RULES.PACKAGE_LABEL[pk]+' ($'+(PROPOSAL_RULES.TIER_MONTHLY_PRICE[pk]||0).toLocaleString()+'/mo)'});
+    L.push('  Selected packages: '+pkgs.join(', '));
+    if(p.add_ons.length){
+      var ads=p.add_ons.map(function(a){return PROPOSAL_RULES.ADDON_LABEL[a]+' (+$'+(PROPOSAL_RULES.ADDON_MONTHLY_PRICE[a]||0).toLocaleString()+'/mo)'});
+      L.push('  Add-ons: '+ads.join(', '));
+    } else {
+      L.push('  Add-ons: none');
+    }
+  } else if(p.pricing_model==='tier'&&p.tier){
+    var tName=p.tier.charAt(0).toUpperCase()+p.tier.slice(1);
+    L.push('  Tier framework [CUSTOM — non-default pricing model]: '+tName+' tier — $'+(p.fees.tier_acv_usd||0).toLocaleString()+'/year ACV');
+  } else {
+    L.push('  [NO PACKAGE SELECTED]');
+  }
+  L.push('');
+  if(p.implementation_tier){
+    L.push('IMPLEMENTATION:');
+    L.push('  Tier: '+PROPOSAL_RULES.IMPLEMENTATION_TIER_LABEL[p.implementation_tier]);
+    L.push('  Description: '+PROPOSAL_RULES.IMPLEMENTATION_TIER_DESCRIPTION[p.implementation_tier]);
+    L.push('');
+  }
+  L.push('FEES:');
+  L.push('  License Fee (annual, undiscounted): '+fmtUSD(p.fees.license_fee_annual_usd)+(p.fees.license_fee_overridden?' [OVERRIDE]':''));
+  L.push('  Discount: '+(p.fees.discount_percent||0)+'%'+((p.fees.discount_percent||0)>0?' [CUSTOM]':''));
+  if(p.fees.implementation_fee_waived){
+    L.push('  Implementation Fee: Waived [CUSTOM]');
+  } else {
+    L.push('  Implementation Fee: '+fmtUSD(p.fees.implementation_fee_amount_usd)+((p.fees.implementation_fee_amount_usd||0)>0?' [CUSTOM]':''));
+  }
+  L.push('  Amount Due (Year 1): '+fmtUSD(p.fees.amount_due_usd)+(p.fees.amount_due_overridden?' [OVERRIDE]':''));
+  L.push('');
+  L.push('PASS-THROUGH LEGAL & COMPLIANCE: '+(p.passthrough_legal_compliance?'INCLUDED (use standard clause from template)':'EXCLUDED [CUSTOM — flag for Brian]'));
+  L.push('');
+  L.push('REVENUE SHARE & PAYMENT:');
+  L.push('  Revenue share: '+p.revenue_share.client_percent+'% Client / '+p.revenue_share.lucra_percent+'% Lucra on net-new revenue Lucra helps directly generate');
+  var trigText='';
+  if(p.payment_trigger==='signature')trigText='Annual payment due 30 days post-signature';
+  else if(p.payment_trigger==='delivery')trigText='Annual payment due at the earlier of 90 days post-signature or the Delivery date';
+  else if(p.payment_trigger==='fundraise_milestone')trigText='Annual payment due upon Client raising '+fmtUSD(p.milestone_amount_usd)+' or more in equity financing';
+  L.push('  Payment trigger: '+trigText+(p.payment_trigger!=='signature'?' [CUSTOM]':''));
+  L.push('');
+  L.push('LICENSE TERM: '+(p.license_term_years||1)+' year'+((p.license_term_years||1)>1?'s':'')+' from Effective Date');
+  L.push('');
+  var hasGtm=(p.gtm_support_usd||0)>0||p.kickoff_date||p.go_live_date||(p.launch_incentive.cost_reduction_percent||0)>0;
+  if(hasGtm){
+    L.push('GO-TO-MARKET & LAUNCH:');
+    if((p.gtm_support_usd||0)>0)L.push('  GTM Support: '+fmtUSD(p.gtm_support_usd));
+    if(p.kickoff_date)L.push('  Kickoff Date: '+p.kickoff_date);
+    if(p.go_live_date)L.push('  Go-Live Date: '+p.go_live_date);
+    if((p.launch_incentive.cost_reduction_percent||0)>0){
+      L.push('  Launch Incentive [CUSTOM]: Reduce costs by '+p.launch_incentive.cost_reduction_percent+'% if launched by '+(p.launch_incentive.launch_by_date||'___'));
+    }
+    L.push('');
+  }
+  if(p.custom.special_terms||p.custom.custom_clauses){
+    L.push('SPECIAL TERMS / ADDENDUM (append at end with YELLOW HIGHLIGHT, before signature block):');
+    if(p.custom.special_terms){
+      L.push('  --- Special Terms ---');
+      L.push('  '+p.custom.special_terms.replace(/\n/g,'\n  '));
+    }
+    if(p.custom.custom_clauses){
+      L.push('  --- Custom Clauses ---');
+      L.push('  '+p.custom.custom_clauses.replace(/\n/g,'\n  '));
+    }
+    L.push('');
+  }
+  if(p.custom.review_flags&&p.custom.review_flags.length){
+    L.push('REVIEW FLAGS (apply AMBER BORDER to these fields for Brian\'s special attention):');
+    p.custom.review_flags.forEach(function(f){L.push('  - '+f)});
+    L.push('');
+  }
+  L.push('═══ END OF VALUES ═══');
+  L.push('');
+  L.push('After making the copy, please share the URL of the new document.');
+  return L.join('\n');
+}
+
+function PRcopyGeminiPrompt(){
+  var prompt=PRgenerateGeminiPrompt();
+  var status=$('pf-copy-status');
+  var done=function(ok,msg){if(status){status.textContent=ok?'✓ '+msg:'⚠ '+msg;status.style.color=ok?'var(--green)':'var(--red)';setTimeout(function(){status.textContent=''},3500)}};
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(prompt).then(function(){done(true,'Copied! Paste into Gemini.')}).catch(function(e){done(false,'Copy failed: '+e.message)});
+  } else {
+    // Fallback for older browsers
+    var ta=document.createElement('textarea');ta.value=prompt;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');done(true,'Copied (fallback)')}catch(e){done(false,'Copy not supported')}
+    document.body.removeChild(ta);
+  }
+}
+
+function PRtogglePreviewPrompt(){
+  var pre=$('pf-prompt-preview');
+  if(!pre)return;
+  if(pre.style.display==='none'){
+    pre.textContent=PRgenerateGeminiPrompt();
+    pre.style.display='block';
+  } else {
+    pre.style.display='none';
+  }
 }
 
 function PRescape(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
