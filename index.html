@@ -181,6 +181,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 <button class="tab" onclick="T('compare',this)">Scenarios</button>
 <button class="tab" onclick="T('pricing',this)">Contract options</button>
 <button class="tab" onclick="T('discount',this)">Discount lever</button>
+<button class="tab" onclick="T('proposal',this)">Proposal builder</button>
 </div>
 
 <div id="roi">
@@ -259,6 +260,11 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 <div class="pitch" id="d-pitch" style="margin-top:4px"></div>
 <div class="gen-section"><div class="gen-row"><input class="gen-input" id="n-discount" placeholder="Venue name"><button class="gen-btn" onclick="GEN('discount')">Generate discount card</button><button class="gen-btn2" onclick="CPH('discount')">Copy HTML</button></div><div class="card-wrap" id="w-discount"><div class="card-actions"><button class="dl-btn" onclick="DL('discount')">Download image</button></div><div id="o-discount"></div></div></div>
 </div>
+
+<div id="proposal" style="display:none">
+<p style="font-size:13px;color:var(--text2);margin-bottom:8px;line-height:1.6">Build a Lucra agreement, preview it live, and export to PDF for Brian to review.</p>
+<p style="font-size:11px;color:var(--text3);margin-bottom:20px">Form, preview, and review summary land here in commits 2–4. PDF export wires up in commit 5.</p>
+</div>
 </div>
 
 <script>
@@ -276,7 +282,7 @@ function sync(){var keys=['vis','arpu','fee','opt','lift','loc','loy'];keys.forE
 function checkCaps(){[{k:'vis',id:'oc-vis',max:3000},{k:'fee',id:'oc-fee',max:3000},{k:'pfee',id:'oc-pfee',max:3000}].forEach(function(c){if($(c.id))$(c.id).innerHTML=V[c.k]>c.max?'<div class="over-cap">Custom value above slider max ($'+c.max.toLocaleString()+')</div>':''})}
 function S(k){V[k]=+$('s-'+k).value;if(k==='fee')V.pfee=V[k];if(k==='pfee')V.fee=V[k];$('i-'+k).value=V[k];if(k==='opt'||k==='lift'){curScn='';document.querySelectorAll('.scn').forEach(function(b){b.classList.remove('on')})}checkCaps();U()}
 function I(k){var raw=$('i-'+k).value;if(raw===''||raw==='-')return;var v=parseFloat(raw);if(isNaN(v)||v<0)return;V[k]=v;if(k==='fee')V.pfee=v;if(k==='pfee')V.fee=v;var sr=$('s-'+k);if(sr)sr.value=Math.max(+sr.min,Math.min(+sr.max,Math.round(v)));if(k==='opt'||k==='lift'){curScn='';document.querySelectorAll('.scn').forEach(function(b){b.classList.remove('on')})}checkCaps();U()}
-function T(id,b){['roi','compare','pricing','discount'].forEach(function(t){$(t).style.display=t===id?'block':'none'});document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});b.classList.add('active');if(id==='pricing')sync();U()}
+function T(id,b){['roi','compare','pricing','discount','proposal'].forEach(function(t){$(t).style.display=t===id?'block':'none'});document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});b.classList.add('active');if(id==='pricing')sync();U()}
 function C(vis,arpu,fee,optPct,liftPct){var opt=optPct/100,lift=liftPct/100,al=arpu*lift,la=arpu+al,du=Math.round(vis*opt),mu=du*30,mr=du*al*30,nm=mr-fee,ar=nm*12,bu=al>0?Math.ceil(fee/(al*30)):Infinity,bv=opt>0?Math.ceil(bu/opt):Infinity,rx=fee>0?(mr/fee).toFixed(1):'0',pb=mr>0?Math.round(fee/(mr/30)*10)/10:Infinity;return{arpu:arpu,lucraARPU:la,arpuLift:al,dailyUsers:du,moUsers:mu,moRev:mr,netMo:nm,annROI:ar,brkUsers:bu,brkVis:bv,roiX:rx,paybackDays:pb}}
 function CP(id){var el=$(id);if(!el)return;var txt=el.innerText.replace(/^Copy\n?/,'').replace(/Copied!\n?/,'');navigator.clipboard.writeText(txt);var btn=el.querySelector('.cp-btn');if(btn){btn.textContent='Copied!';btn.classList.add('done');setTimeout(function(){btn.textContent='Copy';btn.classList.remove('done')},2000)}}
 
