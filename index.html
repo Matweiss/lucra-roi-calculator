@@ -314,7 +314,33 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 
 <div id="mg" style="display:none">
 <p style="font-size:13px;color:var(--text2);margin-bottom:8px;line-height:1.6">ROI calc for mini-games partnerships — apps, embedded SDKs, branded games for non-venue partners.</p>
-<p style="font-size:11px;color:var(--text3);margin-bottom:20px">Form, math flow, scenarios, sensitivity, and pitch copy land in commits 2–5.</p>
+
+<div class="presets" id="mg-presets"></div>
+<div class="scenarios">
+<button class="scn" data-s="cons" onclick="MGSC('cons')">Conservative</button>
+<button class="scn" data-s="avg" onclick="MGSC('avg')">Average</button>
+<button class="scn" data-s="case" onclick="MGSC('case')">Case study</button>
+</div>
+
+<div class="inputs">
+<div class="input-group"><div class="input-head"><span class="input-label">Total addressable users</span><input class="vi" id="mgi-tau" type="number" min="0" step="1000" oninput="MGI('tau')"></div><input type="range" min="10000" max="50000000" step="10000" value="1000000" id="mgs-tau" oninput="MGS('tau')"><div class="sn">App users, ambassadors, or community size</div></div>
+<div class="input-group"><div class="input-head"><span class="input-label">Engagement rate</span><div class="input-val"><input class="vi" id="mgi-eng" type="number" min="0" step="0.5" oninput="MGI('eng')"><span class="vp">%</span></div></div><input type="range" min="1" max="60" step="1" value="10" id="mgs-eng" oninput="MGS('eng')"><div class="sn">% of users actively playing mini games</div></div>
+<div class="input-group"><div class="input-head"><span class="input-label">Plays / user / month</span><input class="vi" id="mgi-plays" type="number" min="0" step="1" oninput="MGI('plays')"></div><input type="range" min="1" max="200" step="1" value="20" id="mgs-plays" oninput="MGS('plays')"><div class="sn">Frequency among engaged players</div></div>
+<div class="input-group"><div class="input-head"><span class="input-label">Avg wager / play</span><div class="input-val"><span class="vp">$</span><input class="vi" id="mgi-wager" type="number" min="0" step="0.25" oninput="MGI('wager')"></div></div><input type="range" min="0.25" max="20" step="0.25" value="2" id="mgs-wager" oninput="MGS('wager')"><div class="sn">Real-money wager amount per play</div></div>
+<div class="input-group"><div class="input-head"><span class="input-label">Rake rate</span><div class="input-val"><input class="vi" id="mgi-rake" type="number" min="0" max="50" step="0.5" oninput="MGI('rake')"><span class="vp">%</span></div></div><input type="range" min="2" max="30" step="0.5" value="10" id="mgs-rake" oninput="MGS('rake')"><div class="sn">% of wagered $ Lucra extracts (industry: 5–15%)</div></div>
+<div class="input-group"><div class="input-head"><span class="input-label">Lucra rev share</span><div class="input-val"><input class="vi" id="mgi-rs" type="number" min="0" max="100" step="1" oninput="MGI('rs')"><span class="vp">%</span></div></div><input type="range" min="10" max="50" step="1" value="25" id="mgs-rs" oninput="MGS('rs')"><div class="sn">% of rake Lucra keeps; Client gets the rest</div></div>
+</div>
+
+<div class="section-label" style="margin-top:18px"><span class="dot" style="background:var(--green)"></span>Engaged players & monthly volume</div>
+<div class="grid grid4" id="mg-funnel" style="margin-bottom:14px"></div>
+
+<div class="section-label"><span class="dot" style="background:var(--blue)"></span>Lucra revenue</div>
+<div class="grid grid3" id="mg-revenue" style="margin-bottom:14px"></div>
+
+<div class="section-label"><span class="dot" style="background:var(--purple)"></span>Client revenue</div>
+<div class="grid grid3" id="mg-client" style="margin-bottom:18px"></div>
+
+<p style="font-size:11px;color:var(--text3);margin-top:6px">Math flow visualization, sensitivity table, and pitch copy land in commits 3–5.</p>
 </div>
 
 <div id="proposal" style="display:none">
@@ -866,6 +892,58 @@ function checkPDFReady() {
   return ready;
 }
 initP();sync();U();
+
+/* ─── MINI GAMES ROI ──────────────────────────────────────────────── */
+var MGP=[
+  {n:'EX Sports / Sean Garnier',tau:25000000,eng:2,plays:15,wager:2,rake:10,rs:25},
+  {n:'UrbanBall',tau:100000,eng:15,plays:25,wager:3,rake:10,rs:25},
+  {n:'Generic small',tau:50000,eng:10,plays:20,wager:2,rake:10,rs:25},
+  {n:'Generic mid',tau:500000,eng:10,plays:20,wager:2,rake:10,rs:25},
+  {n:'Generic large',tau:5000000,eng:8,plays:20,wager:2,rake:10,rs:25},
+  {n:'Custom',tau:1000000,eng:10,plays:20,wager:2,rake:10,rs:25}
+];
+var MGSCN={cons:{eng:5,plays:10,rake:5},avg:{eng:10,plays:20,rake:10},case:{eng:20,plays:40,rake:15}};
+var MG={tau:1000000,eng:10,plays:20,wager:2,rake:10,rs:25};
+var mgSel=5,mgScn='';
+
+function MGinitP(){$('mg-presets').innerHTML=MGP.map(function(p,i){return '<button class="preset'+(i===mgSel?' on':'')+'" onclick="MGpk('+i+')">'+p.n+'</button>'}).join('')}
+function MGpk(i){mgSel=i;var p=MGP[i];MG.tau=p.tau;MG.eng=p.eng;MG.plays=p.plays;MG.wager=p.wager;MG.rake=p.rake;MG.rs=p.rs;MGsync();MGinitP();MGu()}
+function MGSC(k){if(mgScn===k){mgScn='';document.querySelectorAll('#mg .scn').forEach(function(b){b.classList.remove('on')});MGu();return}mgScn=k;var s=MGSCN[k];MG.eng=s.eng;MG.plays=s.plays;MG.rake=s.rake;MGsync();document.querySelectorAll('#mg .scn').forEach(function(b){b.classList.toggle('on',b.dataset.s===k)});MGu()}
+function MGsync(){['tau','eng','plays','wager','rake','rs'].forEach(function(k){var s=$('mgs-'+k),i=$('mgi-'+k);if(s){s.value=Math.min(+s.max,Math.max(+s.min,Math.round(MG[k]*1000)/1000))}if(i){i.value=MG[k]}})}
+function MGS(k){MG[k]=+$('mgs-'+k).value;$('mgi-'+k).value=MG[k];if(k==='eng'||k==='plays'||k==='rake'){mgScn='';document.querySelectorAll('#mg .scn').forEach(function(b){b.classList.remove('on')})}MGu()}
+function MGI(k){var raw=$('mgi-'+k).value;if(raw===''||raw==='-')return;var v=parseFloat(raw);if(isNaN(v)||v<0)return;MG[k]=v;var sr=$('mgs-'+k);if(sr)sr.value=Math.max(+sr.min,Math.min(+sr.max,v));if(k==='eng'||k==='plays'||k==='rake'){mgScn='';document.querySelectorAll('#mg .scn').forEach(function(b){b.classList.remove('on')})}MGu()}
+
+function MGcalc(tau,eng,plays,wager,rake,rs){
+  var engaged=Math.round(tau*eng/100);
+  var monthlyPlays=engaged*plays;
+  var monthlyWager=monthlyPlays*wager;
+  var monthlyRake=monthlyWager*rake/100;
+  var lucraMo=monthlyRake*rs/100;
+  var clientMo=monthlyRake*(100-rs)/100;
+  return{engaged:engaged,monthlyPlays:monthlyPlays,monthlyWager:monthlyWager,monthlyRake:monthlyRake,lucraMo:lucraMo,clientMo:clientMo,lucraAnn:lucraMo*12,clientAnn:clientMo*12,wagerAnn:monthlyWager*12,rakeAnn:monthlyRake*12}
+}
+
+function MGu(){
+  var r=MGcalc(MG.tau,MG.eng,MG.plays,MG.wager,MG.rake,MG.rs);
+  // Funnel — engaged + plays + wager + rake
+  $('mg-funnel').innerHTML=
+    '<div class="stat"><div class="label">Engaged players</div><div class="val cyan">'+r.engaged.toLocaleString()+'</div><div class="sub">'+MG.eng+'% of '+MG.tau.toLocaleString()+'</div></div>'+
+    '<div class="stat"><div class="label">Monthly plays</div><div class="val">'+r.monthlyPlays.toLocaleString()+'</div><div class="sub">'+MG.plays+' plays / engaged user</div></div>'+
+    '<div class="stat"><div class="label">Monthly wagered</div><div class="val">'+F(r.monthlyWager)+'</div><div class="sub">at $'+MG.wager.toFixed(2)+' / play</div></div>'+
+    '<div class="stat"><div class="label">Monthly rake</div><div class="val amber">'+F(r.monthlyRake)+'</div><div class="sub">'+MG.rake+'% of wagered $</div></div>';
+  // Lucra revenue
+  $('mg-revenue').innerHTML=
+    '<div class="stat"><div class="label">Lucra monthly</div><div class="val green">'+F(r.lucraMo)+'</div><div class="sub">'+MG.rs+'% of rake</div></div>'+
+    '<div class="stat"><div class="label">Lucra annual</div><div class="val green">'+F(r.lucraAnn)+'</div><div class="sub">12 × monthly</div></div>'+
+    '<div class="stat"><div class="label">Lucra effective ARPU</div><div class="val">'+F(r.engaged>0?Math.round(r.lucraAnn/r.engaged):0)+'</div><div class="sub">per engaged user / yr</div></div>';
+  // Client revenue
+  $('mg-client').innerHTML=
+    '<div class="stat"><div class="label">Client monthly</div><div class="val purple">'+F(r.clientMo)+'</div><div class="sub">'+(100-MG.rs)+'% of rake</div></div>'+
+    '<div class="stat"><div class="label">Client annual</div><div class="val purple">'+F(r.clientAnn)+'</div></div>'+
+    '<div class="stat"><div class="label">Client effective ARPU</div><div class="val">'+F(r.engaged>0?Math.round(r.clientAnn/r.engaged):0)+'</div><div class="sub">per engaged user / yr</div></div>';
+}
+
+MGinitP();MGsync();MGu();
 
 /* ─── PROPOSAL BUILDER ─────────────────────────────────────────────── */
 function PRtoday(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
