@@ -236,6 +236,27 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 </div>
 
 <div id="roi">
+<div class="pf-section" style="margin-bottom:14px">
+<div class="pf-section-title">Discovery — fill in customer answers</div>
+<div class="pf-row">
+<div class="pf-label">1. On an average day, how many guests visit?</div>
+<input class="pf-input" id="disc-vis" type="number" min="0" step="1" placeholder="e.g. 1000" oninput="discI('vis',this.value)">
+<div class="sn">Best guess if no exact number — venue/restaurant/gym daily traffic</div>
+</div>
+<div class="pf-row pf-row-2col">
+<div>
+<div class="pf-label">2. Typical spend per guest, per visit</div>
+<div style="display:flex;align-items:center;gap:6px"><span style="color:var(--text2);font-family:var(--mono)">$</span><input class="pf-input" id="disc-arpu" type="number" min="0" step="0.5" placeholder="e.g. 45" oninput="discI('arpu',this.value)" style="flex:1"></div>
+<div class="sn">ARPU — typical receipt size</div>
+</div>
+<div>
+<div class="pf-label">3. # of locations to model</div>
+<input class="pf-input" id="disc-loc" type="number" min="1" step="1" placeholder="e.g. 1" oninput="discI('loc',this.value)">
+<div class="sn">How many sites covered by this deal</div>
+</div>
+</div>
+<p style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5">Defaults applied automatically: opt-in 10%, ARPU lift +15%, Lucra fee $2.5K/mo. Use the scenario buttons below to flex sensitivity.</p>
+</div>
 <div class="presets" id="presets"></div>
 <div class="scenarios"><button class="scn" data-s="cons" onclick="SC('cons')">Ultra conservative</button><button class="scn" data-s="avg" onclick="SC('avg')">Average</button><button class="scn" data-s="case" onclick="SC('case')">Case study</button></div>
 <div class="inputs">
@@ -314,6 +335,21 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 
 <div id="mg" style="display:none">
 <p style="font-size:13px;color:var(--text2);margin-bottom:8px;line-height:1.6">ROI calc for mini-games partnerships — apps, embedded SDKs, branded games for non-venue partners.</p>
+
+<div class="pf-section" style="margin-bottom:14px">
+<div class="pf-section-title">Discovery — fill in partner answers</div>
+<div class="pf-row">
+<div class="pf-label">1. Monthly active users (MAU)?</div>
+<input class="pf-input" id="disc-mg-tau" type="number" min="0" step="1000" placeholder="e.g. 1000000" oninput="discMGI('tau',this.value)">
+<div class="sn">Active users in the last 30 days — best guess is fine; avoid total downloads (inflated)</div>
+</div>
+<div class="pf-row">
+<div class="pf-label">2. Existing engagement data (optional notes)</div>
+<input class="pf-input" id="disc-mg-notes" type="text" placeholder="e.g. 'Previous in-app game ran at 12% engagement'">
+<div class="sn">Helps you pick the right engagement % manually — does not auto-fill</div>
+</div>
+<p style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5">Defaults applied: 10% engagement, 20 plays/user/mo, $2 wager, 10% rake, 25% Lucra rev share. Use scenario buttons below to flex.</p>
+</div>
 
 <div class="presets" id="mg-presets"></div>
 <div class="scenarios">
@@ -572,6 +608,7 @@ function sync(){var keys=['vis','arpu','fee','opt','lift','loc','loy'];keys.forE
 function checkCaps(){[{k:'vis',id:'oc-vis',max:3000},{k:'fee',id:'oc-fee',max:3000},{k:'pfee',id:'oc-pfee',max:3000}].forEach(function(c){if($(c.id))$(c.id).innerHTML=V[c.k]>c.max?'<div class="over-cap">Custom value above slider max ($'+c.max.toLocaleString()+')</div>':''})}
 function S(k){V[k]=+$('s-'+k).value;if(k==='fee')V.pfee=V[k];if(k==='pfee')V.fee=V[k];$('i-'+k).value=V[k];if(k==='opt'||k==='lift'){curScn='';document.querySelectorAll('.scn').forEach(function(b){b.classList.remove('on')})}checkCaps();U()}
 function I(k){var raw=$('i-'+k).value;if(raw===''||raw==='-')return;var v=parseFloat(raw);if(isNaN(v)||v<0)return;V[k]=v;if(k==='fee')V.pfee=v;if(k==='pfee')V.fee=v;var sr=$('s-'+k);if(sr)sr.value=Math.max(+sr.min,Math.min(+sr.max,Math.round(v)));if(k==='opt'||k==='lift'){curScn='';document.querySelectorAll('.scn').forEach(function(b){b.classList.remove('on')})}checkCaps();U()}
+function discI(k,val){var v=parseFloat(val);if(val===''||isNaN(v)||v<0)return;V[k]=v;if(k==='fee')V.pfee=v;if($('i-'+k))$('i-'+k).value=v;var sr=$('s-'+k);if(sr)sr.value=Math.max(+sr.min,Math.min(+sr.max,Math.round(v)));checkCaps();U()}
 function T(id,b){['roi','compare','pricing','discount','mg','proposal'].forEach(function(t){$(t).style.display=t===id?'block':'none'});document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});b.classList.add('active');if(id==='pricing')sync();U()}
 function C(vis,arpu,fee,optPct,liftPct){var opt=optPct/100,lift=liftPct/100,al=arpu*lift,la=arpu+al,du=Math.round(vis*opt),mu=du*30,mr=du*al*30,nm=mr-fee,ar=nm*12,bu=al>0?Math.ceil(fee/(al*30)):Infinity,bv=opt>0?Math.ceil(bu/opt):Infinity,rx=fee>0?(mr/fee).toFixed(1):'0',pb=mr>0?Math.round(fee/(mr/30)*10)/10:Infinity;return{arpu:arpu,lucraARPU:la,arpuLift:al,dailyUsers:du,moUsers:mu,moRev:mr,netMo:nm,annROI:ar,brkUsers:bu,brkVis:bv,roiX:rx,paybackDays:pb}}
 function CP(id){var el=$(id);if(!el)return;var txt=el.innerText.replace(/^Copy\n?/,'').replace(/Copied!\n?/,'');navigator.clipboard.writeText(txt);var btn=el.querySelector('.cp-btn');if(btn){btn.textContent='Copied!';btn.classList.add('done');setTimeout(function(){btn.textContent='Copy';btn.classList.remove('done')},2000)}}
@@ -926,6 +963,7 @@ function MGSC(k){if(mgScn===k){mgScn='';document.querySelectorAll('#mg .scn').fo
 function MGsync(){['tau','eng','plays','wager','rake','rs'].forEach(function(k){var s=$('mgs-'+k),i=$('mgi-'+k);if(s){s.value=Math.min(+s.max,Math.max(+s.min,Math.round(MG[k]*1000)/1000))}if(i){i.value=MG[k]}})}
 function MGS(k){MG[k]=+$('mgs-'+k).value;$('mgi-'+k).value=MG[k];if(k==='eng'||k==='plays'||k==='rake'){mgScn='';document.querySelectorAll('#mg .scn').forEach(function(b){b.classList.remove('on')})}MGu()}
 function MGI(k){var raw=$('mgi-'+k).value;if(raw===''||raw==='-')return;var v=parseFloat(raw);if(isNaN(v)||v<0)return;MG[k]=v;var sr=$('mgs-'+k);if(sr)sr.value=Math.max(+sr.min,Math.min(+sr.max,v));if(k==='eng'||k==='plays'||k==='rake'){mgScn='';document.querySelectorAll('#mg .scn').forEach(function(b){b.classList.remove('on')})}MGu()}
+function discMGI(k,val){var v=parseFloat(val);if(val===''||isNaN(v)||v<0)return;MG[k]=v;if($('mgi-'+k))$('mgi-'+k).value=v;var sr=$('mgs-'+k);if(sr)sr.value=Math.max(+sr.min,Math.min(+sr.max,v));MGu()}
 
 function MGcalc(tau,eng,plays,wager,rake,rs){
   var engaged=Math.round(tau*eng/100);
