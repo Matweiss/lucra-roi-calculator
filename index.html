@@ -228,7 +228,6 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 
 <div class="tabs">
 <button class="tab active" onclick="T('roi',this)">ROI calculator</button>
-<button class="tab" onclick="T('mg',this)">Mini games</button>
 <button class="tab" onclick="T('analytics',this)">Analytics</button>
 <button class="tab" onclick="T('proposal',this)">Proposal builder</button>
 </div>
@@ -266,16 +265,53 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 <div class="input-group"><div class="input-head"><span class="input-label"># of locations</span><input class="vi" id="i-loc" type="number" min="1" step="1" value="1" oninput="I('loc')"></div><input type="range" min="1" max="100" step="1" value="1" id="s-loc" oninput="S('loc')"><div class="sn">Multi-location deal sizing</div></div>
 </div>
 <div class="input-group span2" style="margin-bottom:24px"><div class="input-head"><span class="input-label">Current loyalty/marketing spend per location (optional)</span><div class="input-val"><span class="vp">$</span><input class="vi" id="i-loy" type="number" min="0" step="1000" value="0" oninput="I('loy')" style="width:90px"></div></div><input type="range" min="0" max="300000" step="5000" value="0" id="s-loy" oninput="S('loy')"><div class="sn">Annual spend on loyalty, CRM, email. $50k-$200k typical</div></div>
-<div class="input-group span2" style="margin-bottom:14px">
-<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text2)">
-<input type="checkbox" id="mglic-toggle" onchange="toggleMglic()" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer"> Add mini games to this deal
-</label>
-</div>
-<div class="input-group span2" id="mglic-row" style="display:none;margin-bottom:24px"><div class="input-head"><span class="input-label">Mini games add-on ($/mo)</span><div class="input-val"><span class="vp">$</span><input class="vi" id="i-mglic" type="number" min="0" max="30000" step="500" value="0" oninput="I('mglic')" style="width:90px"></div></div><input type="range" min="0" max="30000" step="500" value="0" id="s-mglic" oninput="S('mglic')"><div class="sn">Mini games license fee on top of the core deal. Max $30K/mo. Use the Mini games tab to model variable rev share separately.</div></div>
-
-<div class="section-label"><span class="dot" style="background:var(--green)"></span>Revenue impact</div><div class="grid grid3" id="results"></div>
+<div class="section-label"><span class="dot" style="background:var(--green)"></span>Core product — revenue impact</div><div class="grid grid3" id="results"></div>
 <div class="pitch" id="pitch"></div>
 <div id="quota-track"></div>
+
+<div style="margin-top:32px;padding:14px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius)">
+<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:4px">Section 2 — Mini Games (optional)</div>
+<div style="font-size:12px;color:var(--text3);line-height:1.5">Fill out below for app-based / mini games partnerships. Skip if this is a venue-only deal. Use both sections to model hybrid deals (core + mini games).</div>
+</div>
+
+<div class="pf-section" style="margin-top:14px;margin-bottom:14px">
+<div class="pf-section-title">Mini games discovery</div>
+<div class="pf-row">
+<div class="pf-label">Monthly active users (MAU)?</div>
+<input class="pf-input" id="disc-mg-tau" type="number" min="0" step="1000" placeholder="e.g. 1000000 (leave blank to skip mini games)" oninput="discMGI('tau',this.value)">
+<div class="sn">Active users in the last 30 days. Avoid total downloads (inflated).</div>
+</div>
+<div class="pf-row">
+<div class="pf-label">Existing engagement data (optional notes)</div>
+<input class="pf-input" id="disc-mg-notes" type="text" placeholder="e.g. 'Previous in-app game ran at 12% engagement'">
+<div class="sn">Helps you pick engagement % manually — does not auto-fill</div>
+</div>
+<p style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5">Defaults: 10% engagement, 20 plays/user/mo, $2 wager, 10% rake, 25% Lucra rev share, $0 license.</p>
+</div>
+
+<div class="presets" id="mg-presets"></div>
+<div class="scenarios">
+<button class="scn" data-s="cons" onclick="MGSC('cons')">Conservative</button>
+<button class="scn" data-s="avg" onclick="MGSC('avg')">Average</button>
+<button class="scn" data-s="case" onclick="MGSC('case')">Case study</button>
+</div>
+
+<div class="inputs">
+<div class="input-group"><div class="input-head"><span class="input-label">Total addressable users</span><input class="vi" id="mgi-tau" type="number" min="0" step="1000" oninput="MGI('tau')"></div><input type="range" min="10000" max="50000000" step="10000" value="1000000" id="mgs-tau" oninput="MGS('tau')"><div class="sn">App users, ambassadors, or community size</div></div>
+<div class="input-group"><div class="input-head"><span class="input-label">Engagement rate</span><div class="input-val"><input class="vi" id="mgi-eng" type="number" min="0" step="0.5" oninput="MGI('eng')"><span class="vp">%</span></div></div><input type="range" min="1" max="60" step="1" value="10" id="mgs-eng" oninput="MGS('eng')"><div class="sn">% of users actively playing mini games</div></div>
+<div class="input-group"><div class="input-head"><span class="input-label">Plays / user / month</span><input class="vi" id="mgi-plays" type="number" min="0" step="1" oninput="MGI('plays')"></div><input type="range" min="1" max="200" step="1" value="20" id="mgs-plays" oninput="MGS('plays')"><div class="sn">Frequency among engaged players</div></div>
+<div class="input-group"><div class="input-head"><span class="input-label">Avg wager / play</span><div class="input-val"><span class="vp">$</span><input class="vi" id="mgi-wager" type="number" min="0" step="0.25" oninput="MGI('wager')"></div></div><input type="range" min="0.25" max="20" step="0.25" value="2" id="mgs-wager" oninput="MGS('wager')"><div class="sn">Real-money wager amount per play</div></div>
+<div class="input-group"><div class="input-head"><span class="input-label">Rake rate</span><div class="input-val"><input class="vi" id="mgi-rake" type="number" min="0" max="50" step="0.5" oninput="MGI('rake')"><span class="vp">%</span></div></div><input type="range" min="2" max="30" step="0.5" value="10" id="mgs-rake" oninput="MGS('rake')"><div class="sn">% of wagered $ Lucra extracts (industry: 5–15%)</div></div>
+<div class="input-group"><div class="input-head"><span class="input-label">Lucra rev share</span><div class="input-val"><input class="vi" id="mgi-rs" type="number" min="0" max="100" step="1" oninput="MGI('rs')"><span class="vp">%</span></div></div><input type="range" min="0" max="50" step="1" value="25" id="mgs-rs" oninput="MGS('rs')"><div class="sn">% of rake Lucra keeps; 0% on true license-only deals</div></div>
+<div class="input-group span2"><div class="input-head"><span class="input-label">Monthly license fee (mini games)</span><div class="input-val"><span class="vp">$</span><input class="vi" id="mgi-license" type="number" min="0" max="30000" step="500" oninput="MGI('license')"></div></div><input type="range" min="0" max="30000" step="500" value="0" id="mgs-license" oninput="MGS('license')"><div class="sn">Max $30K/mo. Set 0 for pure rev share, $30K for true license-only (rev share 0%)</div></div>
+</div>
+
+<div class="section-label" style="margin-top:18px"><span class="dot" style="background:var(--green)"></span>Mini games — engaged players & monthly volume</div>
+<div class="grid grid4" id="mg-funnel" style="margin-bottom:14px"></div>
+<div class="section-label"><span class="dot" style="background:var(--blue)"></span>Mini games — Lucra revenue</div>
+<div class="grid grid3" id="mg-revenue" style="margin-bottom:14px"></div>
+<div class="section-label"><span class="dot" style="background:var(--purple)"></span>Mini games — Client revenue</div>
+<div class="grid grid3" id="mg-client" style="margin-bottom:18px"></div>
 <div class="gen-section">
 <div class="brand-fields">
   <div style="font-size:11px;color:#71717a;margin-bottom:10px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px">Leave-behind generator — all fields required</div>
@@ -298,17 +334,18 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
   </div>
   <input type="file" id="logo-upload" accept="image/*" style="display:none" onchange="handleLogoUpload(this)">
   <span id="logo-status" style="font-size:11px;display:block;margin-bottom:8px"></span>
-  <div id="card-type-row" style="display:none;margin-bottom:10px">
-    <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px">Card type (mini games is on)</div>
+  <div id="card-type-row" style="margin-bottom:10px">
+    <div style="font-size:11px;color:var(--text3);margin-bottom:6px;font-weight:500;text-transform:uppercase;letter-spacing:0.5px">Card type — what to generate</div>
     <div class="pf-radio-group">
       <button class="pf-radio on" data-ct="core" onclick="setCardType('core')">Core product only</button>
+      <button class="pf-radio" data-ct="mg" onclick="setCardType('mg')">Mini games only</button>
       <button class="pf-radio" data-ct="combined" onclick="setCardType('combined')">Combined (core + mini games)</button>
     </div>
   </div>
   <div class="gen-row">
-    <button class="gen-btn" onclick="GEN('roi')">Generate ROI card</button>
-    <button class="gen-btn2" onclick="CPH('roi')">Copy HTML</button>
-    <button class="gen-btn2" id="pdf-btn" onclick="GENPDF()" disabled style="opacity:0.4;cursor:not-allowed">&#128196; PDF Leave-Behind</button>
+    <button class="gen-btn" onclick="UNIFIEDGEN()">Generate one-pager</button>
+    <button class="gen-btn2" onclick="UNIFIEDCPH()">Copy HTML</button>
+    <button class="gen-btn2" id="pdf-btn" onclick="UNIFIEDPDF()" disabled style="opacity:0.4;cursor:not-allowed">&#128196; PDF Leave-Behind</button>
   </div>
   <div id="pdf-validation-msg" style="font-size:11px;color:#F59E0B;margin-top:8px;display:none">&#9888; Enter company name, website URL, and add their logo to unlock the PDF.</div>
 </div>
@@ -343,66 +380,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 <div id="objections-content"></div>
 </div>
 
-<div id="mg" style="display:none">
-<p style="font-size:13px;color:var(--text2);margin-bottom:8px;line-height:1.6">ROI calc for mini-games partnerships — apps, embedded SDKs, branded games for non-venue partners.</p>
-
-<div class="pf-section" style="margin-bottom:14px">
-<div class="pf-section-title">Discovery — fill in partner answers</div>
-<div class="pf-row">
-<div class="pf-label">1. Monthly active users (MAU)?</div>
-<input class="pf-input" id="disc-mg-tau" type="number" min="0" step="1000" placeholder="e.g. 1000000" oninput="discMGI('tau',this.value)">
-<div class="sn">Active users in the last 30 days — best guess is fine; avoid total downloads (inflated)</div>
-</div>
-<div class="pf-row">
-<div class="pf-label">2. Existing engagement data (optional notes)</div>
-<input class="pf-input" id="disc-mg-notes" type="text" placeholder="e.g. 'Previous in-app game ran at 12% engagement'">
-<div class="sn">Helps you pick the right engagement % manually — does not auto-fill</div>
-</div>
-<p style="font-size:11px;color:var(--text3);margin-top:6px;line-height:1.5">Defaults applied: 10% engagement, 20 plays/user/mo, $2 wager, 10% rake, 25% Lucra rev share. Use scenario buttons below to flex.</p>
-</div>
-
-<div class="presets" id="mg-presets"></div>
-<div class="scenarios">
-<button class="scn" data-s="cons" onclick="MGSC('cons')">Conservative</button>
-<button class="scn" data-s="avg" onclick="MGSC('avg')">Average</button>
-<button class="scn" data-s="case" onclick="MGSC('case')">Case study</button>
-</div>
-
-<div class="inputs">
-<div class="input-group"><div class="input-head"><span class="input-label">Total addressable users</span><input class="vi" id="mgi-tau" type="number" min="0" step="1000" oninput="MGI('tau')"></div><input type="range" min="10000" max="50000000" step="10000" value="1000000" id="mgs-tau" oninput="MGS('tau')"><div class="sn">App users, ambassadors, or community size</div></div>
-<div class="input-group"><div class="input-head"><span class="input-label">Engagement rate</span><div class="input-val"><input class="vi" id="mgi-eng" type="number" min="0" step="0.5" oninput="MGI('eng')"><span class="vp">%</span></div></div><input type="range" min="1" max="60" step="1" value="10" id="mgs-eng" oninput="MGS('eng')"><div class="sn">% of users actively playing mini games</div></div>
-<div class="input-group"><div class="input-head"><span class="input-label">Plays / user / month</span><input class="vi" id="mgi-plays" type="number" min="0" step="1" oninput="MGI('plays')"></div><input type="range" min="1" max="200" step="1" value="20" id="mgs-plays" oninput="MGS('plays')"><div class="sn">Frequency among engaged players</div></div>
-<div class="input-group"><div class="input-head"><span class="input-label">Avg wager / play</span><div class="input-val"><span class="vp">$</span><input class="vi" id="mgi-wager" type="number" min="0" step="0.25" oninput="MGI('wager')"></div></div><input type="range" min="0.25" max="20" step="0.25" value="2" id="mgs-wager" oninput="MGS('wager')"><div class="sn">Real-money wager amount per play</div></div>
-<div class="input-group"><div class="input-head"><span class="input-label">Rake rate</span><div class="input-val"><input class="vi" id="mgi-rake" type="number" min="0" max="50" step="0.5" oninput="MGI('rake')"><span class="vp">%</span></div></div><input type="range" min="2" max="30" step="0.5" value="10" id="mgs-rake" oninput="MGS('rake')"><div class="sn">% of wagered $ Lucra extracts (industry: 5–15%)</div></div>
-<div class="input-group"><div class="input-head"><span class="input-label">Lucra rev share</span><div class="input-val"><input class="vi" id="mgi-rs" type="number" min="0" max="100" step="1" oninput="MGI('rs')"><span class="vp">%</span></div></div><input type="range" min="0" max="50" step="1" value="25" id="mgs-rs" oninput="MGS('rs')"><div class="sn">% of rake Lucra keeps; 0% on true license-only deals</div></div>
-<div class="input-group span2"><div class="input-head"><span class="input-label">Monthly license fee (mini games)</span><div class="input-val"><span class="vp">$</span><input class="vi" id="mgi-license" type="number" min="0" max="30000" step="500" oninput="MGI('license')"></div></div><input type="range" min="0" max="30000" step="500" value="0" id="mgs-license" oninput="MGS('license')"><div class="sn">Max $30K/mo. Set 0 for pure rev share, $30K for true license-only (rev share 0%)</div></div>
-</div>
-
-<div class="section-label" style="margin-top:18px"><span class="dot" style="background:var(--green)"></span>Engaged players & monthly volume</div>
-<div class="grid grid4" id="mg-funnel" style="margin-bottom:14px"></div>
-
-<div class="section-label"><span class="dot" style="background:var(--blue)"></span>Lucra revenue</div>
-<div class="grid grid3" id="mg-revenue" style="margin-bottom:14px"></div>
-
-<div class="section-label"><span class="dot" style="background:var(--purple)"></span>Client revenue</div>
-<div class="grid grid3" id="mg-client" style="margin-bottom:18px"></div>
-
-<div class="gen-section">
-<div class="gen-row">
-<input class="gen-input" id="n-mg" placeholder="Partner name (e.g. EX Sports)" oninput="MGcheckReady()" style="flex:1;min-width:160px">
-<button class="gen-btn" onclick="MGGEN()">Generate one-pager</button>
-<button class="gen-btn2" onclick="CPH('mg')">Copy HTML</button>
-<button class="gen-btn2" id="mg-pdf-btn" onclick="MGGENPDF()" style="opacity:0.4;cursor:not-allowed" disabled>&#128196; PDF Leave-Behind</button>
-</div>
-<div id="mg-pdf-msg" style="font-size:11px;color:#F59E0B;margin-top:6px;display:none">&#9888; Enter a partner name to unlock the PDF.</div>
-<div class="card-wrap" id="w-mg">
-<div class="card-actions"><button class="dl-btn" onclick="DL('mg')">Download image</button></div>
-<div id="o-mg"></div>
-</div>
-</div>
-
-<p style="font-size:11px;color:var(--text3);margin-top:6px">Inline math flow visualization, sensitivity table, and pitch copy land in commits 4–5.</p>
-</div>
+<!-- Mini games standalone tab removed — content unified into ROI tab above -->
 
 <div id="proposal" style="display:none">
 <p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6">Build a Lucra agreement, preview live, export to PDF for Brian's review.</p>
@@ -618,8 +596,10 @@ function SC(k){if(curScn===k){curScn='';document.querySelectorAll('.scn').forEac
 function sync(){var keys=['vis','arpu','fee','opt','lift','loc','loy','mglic'];keys.forEach(function(k){if($('s-'+k)){$('s-'+k).value=Math.min(+$('s-'+k).max,Math.max(+$('s-'+k).min,Math.round(V[k])));$('i-'+k).value=V[k]}});if($('s-pfee')){$('s-pfee').value=Math.min(45000,Math.max(0,Math.round(V.pfee)));$('i-pfee').value=Math.round(V.pfee)}checkCaps()}
 function checkCaps(){[{k:'vis',id:'oc-vis',max:3000},{k:'fee',id:'oc-fee',max:45000},{k:'pfee',id:'oc-pfee',max:45000}].forEach(function(c){if($(c.id))$(c.id).innerHTML=V[c.k]>c.max?'<div class="over-cap">Custom value above slider max ($'+c.max.toLocaleString()+')</div>':''})}
 var cardType='core';
-function toggleMglic(){var on=$('mglic-toggle').checked;$('mglic-row').style.display=on?'':'none';if($('card-type-row'))$('card-type-row').style.display=on?'':'none';if(!on){V.mglic=0;if($('i-mglic'))$('i-mglic').value=0;if($('s-mglic'))$('s-mglic').value=0;cardType='core';document.querySelectorAll('#card-type-row .pf-radio').forEach(function(b){b.classList.toggle('on',b.dataset.ct==='core')})}U()}
 function setCardType(t){cardType=t;document.querySelectorAll('#card-type-row .pf-radio').forEach(function(b){b.classList.toggle('on',b.dataset.ct===t)})}
+function UNIFIEDGEN(){if(cardType==='mg'){MGGEN()}else{GEN('roi')}}
+function UNIFIEDCPH(){if(cardType==='mg'){CPH('mg')}else{CPH('roi')}}
+function UNIFIEDPDF(){if(cardType==='mg'){MGGENPDF()}else{GENPDF()}}
 function renderObjections(){
   if(!$('objections-content'))return;
   var r=C(V.vis,V.arpu,V.fee,V.opt,V.lift),fee=V.fee,loc=Math.max(1,Math.round(V.loc));
@@ -655,7 +635,7 @@ function renderObjections(){
 function S(k){V[k]=+$('s-'+k).value;if(k==='fee')V.pfee=V[k];if(k==='pfee')V.fee=V[k];$('i-'+k).value=V[k];if(k==='opt'||k==='lift'){curScn='';document.querySelectorAll('.scn').forEach(function(b){b.classList.remove('on')})}checkCaps();U()}
 function I(k){var raw=$('i-'+k).value;if(raw===''||raw==='-')return;var v=parseFloat(raw);if(isNaN(v)||v<0)return;V[k]=v;if(k==='fee')V.pfee=v;if(k==='pfee')V.fee=v;var sr=$('s-'+k);if(sr)sr.value=Math.max(+sr.min,Math.min(+sr.max,Math.round(v)));if(k==='opt'||k==='lift'){curScn='';document.querySelectorAll('.scn').forEach(function(b){b.classList.remove('on')})}checkCaps();U()}
 function discI(k,val){var v=parseFloat(val);if(val===''||isNaN(v)||v<0)return;V[k]=v;if(k==='fee')V.pfee=v;if($('i-'+k))$('i-'+k).value=v;var sr=$('s-'+k);if(sr)sr.value=Math.max(+sr.min,Math.min(+sr.max,Math.round(v)));checkCaps();U()}
-function T(id,b){['roi','mg','analytics','proposal'].forEach(function(t){if($(t))$(t).style.display=t===id?'block':'none'});document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});b.classList.add('active');U()}
+function T(id,b){['roi','analytics','proposal'].forEach(function(t){if($(t))$(t).style.display=t===id?'block':'none'});document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});b.classList.add('active');U()}
 function C(vis,arpu,fee,optPct,liftPct){var opt=optPct/100,lift=liftPct/100,al=arpu*lift,la=arpu+al,du=Math.round(vis*opt),mu=du*30,mr=du*al*30,nm=mr-fee,ar=nm*12,bu=al>0?Math.ceil(fee/(al*30)):Infinity,bv=opt>0?Math.ceil(bu/opt):Infinity,rx=fee>0?(mr/fee).toFixed(1):'0',pb=mr>0?Math.round(fee/(mr/30)*10)/10:Infinity;return{arpu:arpu,lucraARPU:la,arpuLift:al,dailyUsers:du,moUsers:mu,moRev:mr,netMo:nm,annROI:ar,brkUsers:bu,brkVis:bv,roiX:rx,paybackDays:pb}}
 function CP(id){var el=$(id);if(!el)return;var txt=el.innerText.replace(/^Copy\n?/,'').replace(/Copied!\n?/,'');navigator.clipboard.writeText(txt);var btn=el.querySelector('.cp-btn');if(btn){btn.textContent='Copied!';btn.classList.add('done');setTimeout(function(){btn.textContent='Copy';btn.classList.remove('done')},2000)}}
 
@@ -1053,7 +1033,7 @@ function MGu(){
     '<div class="stat"><div class="label">Client effective ARPU</div><div class="val">'+F(r.engaged>0?Math.round(r.clientAnn/r.engaged):0)+'</div><div class="sub">per engaged user / yr</div></div>';
 }
 
-function MGcheckReady(){var n=$('n-mg').value.trim(),btn=$('mg-pdf-btn'),msg=$('mg-pdf-msg');if(n){btn.disabled=false;btn.style.opacity='1';btn.style.cursor='pointer';msg.style.display='none'}else{btn.disabled=true;btn.style.opacity='0.4';btn.style.cursor='not-allowed';msg.style.display='block'}}
+function MGcheckReady(){if(!$('n-mg')||!$('mg-pdf-btn'))return;var n=$('n-mg').value.trim(),btn=$('mg-pdf-btn'),msg=$('mg-pdf-msg');if(n){btn.disabled=false;btn.style.opacity='1';btn.style.cursor='pointer';if(msg)msg.style.display='none'}else{btn.disabled=true;btn.style.opacity='0.4';btn.style.cursor='not-allowed';if(msg)msg.style.display='block'}}
 
 function MGbuildPitch(p,r){
   var s = p.tau.toLocaleString()+' addressable users at '+p.eng+'% engagement = '+r.engaged.toLocaleString()+' active mini-game players. Each plays '+p.plays+' times/month at $'+p.wager.toFixed(2)+' wager — that\'s '+F(r.monthlyWager)+' wagered through your ecosystem every month.';
@@ -1071,7 +1051,7 @@ function MGbuildPitch(p,r){
 }
 
 function MGGEN(){
-  var name = ($('n-mg').value || 'Partner').replace(/[^a-zA-Z0-9 ]/g,'');
+  var name = (($('n-roi')&&$('n-roi').value)||($('n-mg')&&$('n-mg').value)||'Partner').replace(/[^a-zA-Z0-9 ]/g,'');
   var r = MGcalc(MG.tau,MG.eng,MG.plays,MG.wager,MG.rake,MG.rs,MG.license);
   var bg='#0d0d0f',surf='#181820',border='rgba(255,255,255,0.08)',
       green='#9DFF93',greenDim='rgba(157,255,147,0.12)',greenBorder='rgba(157,255,147,0.25)',
@@ -1085,7 +1065,7 @@ function MGGEN(){
   var fa='style="background:'+amberDim+';border:1px solid rgba(245,158,11,0.2);border-radius:10px;padding:10px 14px;text-align:center;flex:1;min-width:0"';
   var aw='<div style="color:'+text3+';font-size:14px;align-self:center">→</div>';
 
-  var h = '<div style="background:'+bg+';border-radius:16px;padding:32px;max-width:700px;color:'+text+';font-family:-apple-system,BlinkMacSystemFont,sans-serif;border:1px solid '+border+'" id="cap-mg">';
+  var h = '<div style="background:'+bg+';border-radius:16px;padding:32px;max-width:700px;color:'+text+';font-family:-apple-system,BlinkMacSystemFont,sans-serif;border:1px solid '+border+'" id="cap-roi">';
 
   // Header
   h += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:18px;border-bottom:1px solid '+border+'">';
@@ -1155,19 +1135,19 @@ function MGGEN(){
   h += '<div style="border-top:1px solid '+border+';padding-top:12px;display:flex;justify-content:space-between;align-items:center"><div style="font-size:10px;color:'+text3+'">Variable revenue • actuals depend on real-world engagement & adoption</div><div style="font-size:11px;color:'+green+';font-weight:500">www.lucrasports.com</div></div>';
   h += '</div>';
 
-  $('o-mg').innerHTML = h;
-  $('w-mg').classList.add('show');
-  $('w-mg').scrollIntoView({behavior:'smooth',block:'start'});
+  $('o-roi').innerHTML = h;
+  $('w-roi').classList.add('show');
+  $('w-roi').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
 function MGGENPDF(){
   MGGEN();
   setTimeout(function(){
-    var el=document.getElementById('cap-mg');
+    var el=document.getElementById('cap-roi');
     if(!el){alert('Generate the card first.');return}
     html2canvas(el,{scale:2,backgroundColor:'#0d0d0f',useCORS:true,allowTaint:true}).then(function(canvas){
       var imgData=canvas.toDataURL('image/png');
-      var nm=(($('n-mg')&&$('n-mg').value)||'partner').replace(/[^a-zA-Z0-9]/g,'-').toLowerCase();
+      var nm=(($('n-roi')&&$('n-roi').value)||($('n-mg')&&$('n-mg').value)||'partner').replace(/[^a-zA-Z0-9]/g,'-').toLowerCase();
       if(window.jspdf&&window.jspdf.jsPDF){
         var doc=new window.jspdf.jsPDF({orientation:'landscape',unit:'px',format:[canvas.width/2,canvas.height/2]});
         doc.addImage(imgData,'PNG',0,0,canvas.width/2,canvas.height/2);
