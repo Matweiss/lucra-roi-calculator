@@ -228,10 +228,8 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 
 <div class="tabs">
 <button class="tab active" onclick="T('roi',this)">ROI calculator</button>
-<button class="tab" onclick="T('compare',this)">Scenarios</button>
-<button class="tab" onclick="T('pricing',this)">Contract options</button>
-<button class="tab" onclick="T('discount',this)">Discount lever</button>
-<button class="tab" onclick="T('mg',this)">Mini games ROI</button>
+<button class="tab" onclick="T('mg',this)">Mini games</button>
+<button class="tab" onclick="T('analytics',this)">Analytics</button>
 <button class="tab" onclick="T('proposal',this)">Proposal builder</button>
 </div>
 
@@ -262,22 +260,20 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 <div class="inputs">
 <div class="input-group"><div class="input-head"><span class="input-label">Daily visitors</span><input class="vi" id="i-vis" type="number" min="0" step="1" oninput="I('vis')"></div><input type="range" min="50" max="3000" step="10" value="1100" id="s-vis" oninput="S('vis')"><div id="oc-vis"></div></div>
 <div class="input-group"><div class="input-head"><span class="input-label">Current ARPU</span><div class="input-val"><span class="vp">$</span><input class="vi" id="i-arpu" type="number" min="0" step="0.25" oninput="I('arpu')"></div></div><input type="range" min="10" max="80" step="1" value="45" id="s-arpu" oninput="S('arpu')"></div>
-<div class="input-group"><div class="input-head"><span class="input-label">Monthly Lucra fee</span><div class="input-val"><span class="vp">$</span><input class="vi" id="i-fee" type="number" min="0" step="1" oninput="I('fee')"></div></div><input type="range" min="500" max="3000" step="100" value="2500" id="s-fee" oninput="S('fee')"><div id="oc-fee"></div></div>
+<div class="input-group"><div class="input-head"><span class="input-label">Monthly Lucra fee</span><div class="input-val"><span class="vp">$</span><input class="vi" id="i-fee" type="number" min="0" step="100" oninput="I('fee')"></div></div><input type="range" min="0" max="45000" step="500" value="2500" id="s-fee" oninput="S('fee')"><div id="oc-fee"></div></div>
 <div class="input-group"><div class="input-head"><span class="input-label">Opt-in rate</span><div class="input-val"><input class="vi" id="i-opt" type="number" min="0" step="0.25" oninput="I('opt')"><span class="vp">%</span></div></div><input type="range" min="3" max="40" step="1" value="10" id="s-opt" oninput="S('opt')"><div class="sn">Dylan: 5% floor, up to 40%</div></div>
 <div class="input-group"><div class="input-head"><span class="input-label">ARPU lift</span><div class="input-val"><span class="vp">+</span><input class="vi" id="i-lift" type="number" min="0" step="0.25" oninput="I('lift')"><span class="vp">%</span></div></div><input type="range" min="5" max="30" step="1" value="15" id="s-lift" oninput="S('lift')"><div class="sn">Deck: +15%. Conservative: 10%</div></div>
 <div class="input-group"><div class="input-head"><span class="input-label"># of locations</span><input class="vi" id="i-loc" type="number" min="1" step="1" value="1" oninput="I('loc')"></div><input type="range" min="1" max="100" step="1" value="1" id="s-loc" oninput="S('loc')"><div class="sn">Multi-location deal sizing</div></div>
 </div>
 <div class="input-group span2" style="margin-bottom:24px"><div class="input-head"><span class="input-label">Current loyalty/marketing spend per location (optional)</span><div class="input-val"><span class="vp">$</span><input class="vi" id="i-loy" type="number" min="0" step="1000" value="0" oninput="I('loy')" style="width:90px"></div></div><input type="range" min="0" max="300000" step="5000" value="0" id="s-loy" oninput="S('loy')"><div class="sn">Annual spend on loyalty, CRM, email. $50k-$200k typical</div></div>
-<div class="input-group span2" style="margin-bottom:24px"><div class="input-head"><span class="input-label">Mini games add-on (optional, $/mo)</span><div class="input-val"><span class="vp">$</span><input class="vi" id="i-mglic" type="number" min="0" max="30000" step="500" value="0" oninput="I('mglic')" style="width:90px"></div></div><input type="range" min="0" max="30000" step="500" value="0" id="s-mglic" oninput="S('mglic')"><div class="sn">Mini games license fee on top of the core deal. Max $30K/mo. Use the Mini Games ROI tab to model the variable rev share separately.</div></div>
+<div class="input-group span2" style="margin-bottom:14px">
+<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--text2)">
+<input type="checkbox" id="mglic-toggle" onchange="toggleMglic()" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer"> Add mini games to this deal
+</label>
+</div>
+<div class="input-group span2" id="mglic-row" style="display:none;margin-bottom:24px"><div class="input-head"><span class="input-label">Mini games add-on ($/mo)</span><div class="input-val"><span class="vp">$</span><input class="vi" id="i-mglic" type="number" min="0" max="30000" step="500" value="0" oninput="I('mglic')" style="width:90px"></div></div><input type="range" min="0" max="30000" step="500" value="0" id="s-mglic" oninput="S('mglic')"><div class="sn">Mini games license fee on top of the core deal. Max $30K/mo. Use the Mini games tab to model variable rev share separately.</div></div>
 
-<div class="section-label"><span class="dot" style="background:var(--purple)"></span>Visitor funnel</div><div class="flow" id="funnel"></div>
-<div class="section-label"><span class="dot" style="background:var(--cyan)"></span>ARPU impact</div><div class="flow" id="arpu-flow"></div>
 <div class="section-label"><span class="dot" style="background:var(--green)"></span>Revenue impact</div><div class="grid grid3" id="results"></div>
-<div id="deal-size"></div>
-<div class="section-label"><span class="dot" style="background:var(--amber)"></span>Break-even analysis</div><div id="breakeven"></div>
-<div id="repeat-visit"></div>
-<div id="loyalty-compare"></div>
-<div id="mglic-block"></div>
 <div class="pitch" id="pitch"></div>
 <div id="quota-track"></div>
 <div class="gen-section">
@@ -313,26 +309,31 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 </div>
 </div>
 
-<div id="compare" style="display:none">
-<p style="font-size:13px;color:var(--text2);margin-bottom:20px;line-height:1.6">"Even if we don't hit our case study numbers, this is what the ROI looks like at every scenario."</p>
+<div id="analytics" style="display:none">
+<p style="font-size:13px;color:var(--text2);margin-bottom:14px;line-height:1.6">How the ROI is captured — math visualization, scenario sensitivity, discount impact, and objection handling. Numbers below reflect the inputs on the ROI calculator tab and update live.</p>
+
+<div class="section-label" style="margin-top:8px"><span class="dot" style="background:var(--purple)"></span>Visitor funnel</div><div class="flow" id="funnel"></div>
+<div class="section-label"><span class="dot" style="background:var(--cyan)"></span>ARPU impact</div><div class="flow" id="arpu-flow"></div>
+<div id="deal-size"></div>
+<div class="section-label"><span class="dot" style="background:var(--amber)"></span>Break-even analysis</div><div id="breakeven"></div>
+<div id="repeat-visit"></div>
+<div id="loyalty-compare"></div>
+<div id="mglic-block"></div>
+
+<div class="section-label" style="margin-top:32px"><span class="dot" style="background:var(--blue)"></span>Scenarios — ROI at every level</div>
+<p style="font-size:12px;color:var(--text3);margin-bottom:14px">"Even if we don't hit our case study numbers, here's what the ROI looks like at every level."</p>
 <div id="scenario-compare"></div>
 <div class="pitch" id="cmp-pitch"></div>
-<div class="warn">These numbers do NOT include the +110% repeat visit lift. D&B: 1.4x/yr → with Lucra ~3x/yr.</div>
-</div>
 
-<div id="pricing" style="display:none">
-<div class="input-group" style="margin-bottom:20px"><div class="input-head"><span class="input-label">Monthly fee (base)</span><div class="input-val"><span class="vp">$</span><input class="vi" id="i-pfee" type="number" min="0" step="1" oninput="I('pfee')"></div></div><input type="range" min="500" max="3000" step="100" value="2500" id="s-pfee" oninput="S('pfee')"><div id="oc-pfee"></div></div>
-<div class="pg" id="pr-cards"></div>
-<div class="gen-section"><div class="gen-row"><input class="gen-input" id="n-pricing" placeholder="Venue name"><button class="gen-btn" onclick="GEN('pricing')">Generate pricing card</button><button class="gen-btn2" onclick="CPH('pricing')">Copy HTML</button></div><div class="card-wrap" id="w-pricing"><div class="card-actions"><button class="dl-btn" onclick="DL('pricing')">Download image</button></div><div id="o-pricing"></div></div></div>
-</div>
+<div class="section-label" style="margin-top:32px"><span class="dot" style="background:var(--amber)"></span>Discount impact — deal economics</div>
+<p style="font-size:11px;color:var(--text3);margin-bottom:14px" id="d-ctx"></p>
+<div class="section-label" style="margin-top:14px;font-size:11px"><span class="dot" style="background:var(--amber)"></span>Venue perspective</div><div class="grid grid4" id="d-venue"></div>
+<div class="section-label" style="margin-top:14px;font-size:11px"><span class="dot" style="background:var(--purple)"></span>Your commission impact</div><div class="grid grid4" id="d-comm"></div>
+<div class="pitch" id="d-pitch" style="margin-top:14px"></div>
 
-<div id="discount" style="display:none">
-<p style="font-size:13px;color:var(--text2);margin-bottom:8px;line-height:1.6">What happens to deal economics when you offer a discount?</p>
-<p style="font-size:11px;color:var(--text3);margin-bottom:20px" id="d-ctx"></p>
-<div class="section-label"><span class="dot" style="background:var(--amber)"></span>Venue perspective</div><div class="grid grid4" id="d-venue"></div>
-<div class="section-label"><span class="dot" style="background:var(--purple)"></span>Your commission impact</div><div class="grid grid4" id="d-comm"></div>
-<div class="pitch" id="d-pitch" style="margin-top:4px"></div>
-<div class="gen-section"><div class="gen-row"><input class="gen-input" id="n-discount" placeholder="Venue name"><button class="gen-btn" onclick="GEN('discount')">Generate discount card</button><button class="gen-btn2" onclick="CPH('discount')">Copy HTML</button></div><div class="card-wrap" id="w-discount"><div class="card-actions"><button class="dl-btn" onclick="DL('discount')">Download image</button></div><div id="o-discount"></div></div></div>
+<div class="section-label" style="margin-top:32px"><span class="dot" style="background:var(--green)"></span>Common objections + handling</div>
+<p style="font-size:12px;color:var(--text3);margin-bottom:14px">Live-respond to common pushback. Numbers reflect current ROI calc state.</p>
+<div id="objections-content"></div>
 </div>
 
 <div id="mg" style="display:none">
@@ -607,12 +608,45 @@ function ap_(){return V.arpu%1===0?'$'+V.arpu:'$'+fq(V.arpu)}
 function initP(){$('presets').innerHTML=P.map(function(p,i){return '<button class="preset'+(i===sel?' on':'')+'" onclick="pk('+i+')">'+p.n+'</button>'}).join('')}
 function pk(i){sel=i;V.vis=P[i].v;V.arpu=P[i].a;V.fee=P[i].f;V.pfee=P[i].f;V.loc=P[i].l;['n-roi','n-pricing','n-discount'].forEach(function(x){if($(x))$(x).value=P[i].n});sync();initP();U()}
 function SC(k){if(curScn===k){curScn='';document.querySelectorAll('.scn').forEach(function(b){b.classList.remove('on')});U();return}curScn=k;V.opt=SCNS[k].opt;V.lift=SCNS[k].lift;sync();document.querySelectorAll('.scn').forEach(function(b){b.classList.toggle('on',b.dataset.s===k)});U()}
-function sync(){var keys=['vis','arpu','fee','opt','lift','loc','loy','mglic'];keys.forEach(function(k){if($('s-'+k)){$('s-'+k).value=Math.min(+$('s-'+k).max,Math.max(+$('s-'+k).min,Math.round(V[k])));$('i-'+k).value=V[k]}});if($('s-pfee')){$('s-pfee').value=Math.min(3000,Math.max(500,Math.round(V.pfee)));$('i-pfee').value=Math.round(V.pfee)}checkCaps()}
-function checkCaps(){[{k:'vis',id:'oc-vis',max:3000},{k:'fee',id:'oc-fee',max:3000},{k:'pfee',id:'oc-pfee',max:3000}].forEach(function(c){if($(c.id))$(c.id).innerHTML=V[c.k]>c.max?'<div class="over-cap">Custom value above slider max ($'+c.max.toLocaleString()+')</div>':''})}
+function sync(){var keys=['vis','arpu','fee','opt','lift','loc','loy','mglic'];keys.forEach(function(k){if($('s-'+k)){$('s-'+k).value=Math.min(+$('s-'+k).max,Math.max(+$('s-'+k).min,Math.round(V[k])));$('i-'+k).value=V[k]}});if($('s-pfee')){$('s-pfee').value=Math.min(45000,Math.max(0,Math.round(V.pfee)));$('i-pfee').value=Math.round(V.pfee)}checkCaps()}
+function checkCaps(){[{k:'vis',id:'oc-vis',max:3000},{k:'fee',id:'oc-fee',max:45000},{k:'pfee',id:'oc-pfee',max:45000}].forEach(function(c){if($(c.id))$(c.id).innerHTML=V[c.k]>c.max?'<div class="over-cap">Custom value above slider max ($'+c.max.toLocaleString()+')</div>':''})}
+function toggleMglic(){var on=$('mglic-toggle').checked;$('mglic-row').style.display=on?'':'none';if(!on){V.mglic=0;if($('i-mglic'))$('i-mglic').value=0;if($('s-mglic'))$('s-mglic').value=0}U()}
+function renderObjections(){
+  if(!$('objections-content'))return;
+  var r=C(V.vis,V.arpu,V.fee,V.opt,V.lift),fee=V.fee,loc=Math.max(1,Math.round(V.loc));
+  var d10f=Math.round(fee*0.9),d10r=C(V.vis,V.arpu,d10f,V.opt,V.lift);
+  var rc=C(V.vis,V.arpu,fee,5,10);
+  var objs=[
+    {q:'"This is too expensive — your fee is too high"',
+     a:'Show ROI live: at conservative 5% opt-in / 10% lift, monthly lift is '+F(rc.moRev)+' on a '+F(fee)+' fee. Then offer the discount lever: at 10% off ('+F(d10f)+'/mo), payback in '+d10r.paybackDays+' days, '+d10r.roiX+'x ROI. Most deals close around the 10% mark.'},
+    {q:'"Our opt-in rate will be lower than your case studies"',
+     a:'Ultra-conservative scenario (5% opt-in, 10% lift) → still '+F(rc.moRev)+'/mo lift, '+rc.roiX+'x ROI'+(rc.netMo>0?' and net-positive':'')+'. Click the "Ultra conservative" scenario button to show them live.'},
+    {q:'"We already have a loyalty program — we don\'t need this"',
+     a:'Typical loyalty programs run 1-3% adoption at $50K-$200K/yr spend. Lucra runs '+(V.opt||10)+'% adoption at '+F(fee*12)+'/yr fee. Fill in their current loyalty spend on the ROI tab — usually shows Lucra is cheaper AND drives 5-10x the adoption.'},
+    {q:'"What if our customers don\'t engage at all?"',
+     a:'Break-even analysis: at your traffic of '+V.vis.toLocaleString()+' daily visitors, you only need '+(r.brkUsers||'a tiny number of')+' users/day to cover the fee. That\'s '+(r.brkVis<10000?r.brkVis.toLocaleString()+' total visitors a day':'well below typical traffic')+'. Even ultra-conservative scenarios are positive.'},
+    {q:'"How does this work with gambling regulations?"',
+     a:'Lucra is the Merchant of Record for all Lucra-powered games. We operate the wallet, KYC, AML, geolocation, fraud monitoring, responsible gaming — pass-through compliance costs (typically $0.20-$0.60/user/month, capped at $1) are billed at cost. You\'re explicitly shielded from contest operator / payment processor classification.'},
+    {q:'"Why Lucra vs a competitor?"',
+     a:'White-labeled — your brand, your app, not a third-party platform. +110% repeat visit lift validated across Dave & Buster\'s, bowling alleys, golf venues. Real money AND free-to-play in one platform. Live in under 30 days with no custom dev. Founding Account Executive (Mat) is your direct point of contact, not a faceless rep.'},
+    {q:'"We need to see how this fits with our existing app/system"',
+     a:'Three integration paths: (1) Full white-label app — your brand, our infrastructure. (2) SDK embed into your existing app — keeps your auth/wallet/UX, adds Lucra contests. (3) API-only for backend integration. Most partners pick option 1 or 2. Two weeks of Lucra engineering/product resources at kickoff.'},
+    {q:'"What about churn — what if we sign and want out?"',
+     a:'Standard term is '+(V.fee>10000?'3 years':'1-2 years')+' from Effective Date. Subsequent Term: we meet 90 days before expiration to discuss renewal. Implementation fees are heavily discounted (typically 80% off list, often waived) so initial commitment is low. Pass-through compliance keeps ongoing variable costs predictable.'}
+  ];
+  var html='';
+  objs.forEach(function(o){
+    html+='<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;margin-bottom:10px">';
+    html+='<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">'+o.q+'</div>';
+    html+='<div style="font-size:12px;color:var(--text2);line-height:1.6">'+o.a+'</div>';
+    html+='</div>';
+  });
+  $('objections-content').innerHTML=html;
+}
 function S(k){V[k]=+$('s-'+k).value;if(k==='fee')V.pfee=V[k];if(k==='pfee')V.fee=V[k];$('i-'+k).value=V[k];if(k==='opt'||k==='lift'){curScn='';document.querySelectorAll('.scn').forEach(function(b){b.classList.remove('on')})}checkCaps();U()}
 function I(k){var raw=$('i-'+k).value;if(raw===''||raw==='-')return;var v=parseFloat(raw);if(isNaN(v)||v<0)return;V[k]=v;if(k==='fee')V.pfee=v;if(k==='pfee')V.fee=v;var sr=$('s-'+k);if(sr)sr.value=Math.max(+sr.min,Math.min(+sr.max,Math.round(v)));if(k==='opt'||k==='lift'){curScn='';document.querySelectorAll('.scn').forEach(function(b){b.classList.remove('on')})}checkCaps();U()}
 function discI(k,val){var v=parseFloat(val);if(val===''||isNaN(v)||v<0)return;V[k]=v;if(k==='fee')V.pfee=v;if($('i-'+k))$('i-'+k).value=v;var sr=$('s-'+k);if(sr)sr.value=Math.max(+sr.min,Math.min(+sr.max,Math.round(v)));checkCaps();U()}
-function T(id,b){['roi','compare','pricing','discount','mg','proposal'].forEach(function(t){$(t).style.display=t===id?'block':'none'});document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});b.classList.add('active');if(id==='pricing')sync();U()}
+function T(id,b){['roi','mg','analytics','proposal'].forEach(function(t){if($(t))$(t).style.display=t===id?'block':'none'});document.querySelectorAll('.tab').forEach(function(t){t.classList.remove('active')});b.classList.add('active');U()}
 function C(vis,arpu,fee,optPct,liftPct){var opt=optPct/100,lift=liftPct/100,al=arpu*lift,la=arpu+al,du=Math.round(vis*opt),mu=du*30,mr=du*al*30,nm=mr-fee,ar=nm*12,bu=al>0?Math.ceil(fee/(al*30)):Infinity,bv=opt>0?Math.ceil(bu/opt):Infinity,rx=fee>0?(mr/fee).toFixed(1):'0',pb=mr>0?Math.round(fee/(mr/30)*10)/10:Infinity;return{arpu:arpu,lucraARPU:la,arpuLift:al,dailyUsers:du,moUsers:mu,moRev:mr,netMo:nm,annROI:ar,brkUsers:bu,brkVis:bv,roiX:rx,paybackDays:pb}}
 function CP(id){var el=$(id);if(!el)return;var txt=el.innerText.replace(/^Copy\n?/,'').replace(/Copied!\n?/,'');navigator.clipboard.writeText(txt);var btn=el.querySelector('.cp-btn');if(btn){btn.textContent='Copied!';btn.classList.add('done');setTimeout(function(){btn.textContent='Copy';btn.classList.remove('done')},2000)}}
 
@@ -651,7 +685,8 @@ $('cmp-pitch').innerHTML='<button class="cp-btn" onclick="CP(\'cmp-pitch\')">Cop
 
 // Pricing
 var po=[{t:'13-mo annual',sub:'Monthly pay',tm:13,fm:1,pm:12},{t:'14-mo annual',sub:'Upfront',tm:14,fm:2,pm:12},{t:'25-mo 2-year',sub:'Monthly pay',tm:25,fm:2,pm:23},{t:'26-mo 2-year',sub:'Upfront',tm:26,fm:4,pm:22}],pc=['var(--blue)','var(--green)','var(--purple)','var(--amber)'];
-$('pr-cards').innerHTML=po.map(function(o,i){var tot=pfee*o.pm,eff=Math.round(tot/o.tm),disc=pfee>0?((1-eff/pfee)*100).toFixed(1):'0',saves=pfee*o.tm-tot;return '<div class="card-section"><div class="ct" style="color:'+pc[i]+'">'+o.t+'</div><div style="font-size:11px;color:var(--text3);margin-bottom:10px">'+o.sub+'</div><div class="cr"><span class="k">Months</span><span class="v">'+o.tm+' ('+o.fm+' free)</span></div><div class="cr"><span class="k">Contract</span><span class="v">$'+tot.toLocaleString()+'</span></div><div class="cr"><span class="k">Eff. rate</span><span class="v">$'+eff.toLocaleString()+'/mo</span></div><div class="pf"><span class="green" style="font-size:12px;font-weight:500">Saves $'+saves.toLocaleString()+'</span><span class="badge" style="background:rgba(16,185,129,0.1);color:var(--green)">'+disc+'% off</span></div></div>'}).join('');
+if($('pr-cards'))$('pr-cards').innerHTML=po.map(function(o,i){var tot=pfee*o.pm,eff=Math.round(tot/o.tm),disc=pfee>0?((1-eff/pfee)*100).toFixed(1):'0',saves=pfee*o.tm-tot;return '<div class="card-section"><div class="ct" style="color:'+pc[i]+'">'+o.t+'</div><div style="font-size:11px;color:var(--text3);margin-bottom:10px">'+o.sub+'</div><div class="cr"><span class="k">Months</span><span class="v">'+o.tm+' ('+o.fm+' free)</span></div><div class="cr"><span class="k">Contract</span><span class="v">$'+tot.toLocaleString()+'</span></div><div class="cr"><span class="k">Eff. rate</span><span class="v">$'+eff.toLocaleString()+'/mo</span></div><div class="pf"><span class="green" style="font-size:12px;font-weight:500">Saves $'+saves.toLocaleString()+'</span><span class="badge" style="background:rgba(16,185,129,0.1);color:var(--green)">'+disc+'% off</span></div></div>'}).join('');
+renderObjections();
 
 // Discount
 $('d-ctx').textContent=vis.toLocaleString()+' visitors \u2192 '+r.dailyUsers+' users/day ('+op+'%), '+ap+' ARPU, +'+lp+'% lift, '+F(fee)+'/mo'+(loc>1?' \u00d7 '+loc+' locations':'');
