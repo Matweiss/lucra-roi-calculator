@@ -268,6 +268,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 <div class="input-group"><div class="input-head"><span class="input-label"># of locations</span><input class="vi" id="i-loc" type="number" min="1" step="1" value="1" oninput="I('loc')"></div><input type="range" min="1" max="100" step="1" value="1" id="s-loc" oninput="S('loc')"><div class="sn">Multi-location deal sizing</div></div>
 </div>
 <div class="input-group span2" style="margin-bottom:24px"><div class="input-head"><span class="input-label">Current loyalty/marketing spend per location (optional)</span><div class="input-val"><span class="vp">$</span><input class="vi" id="i-loy" type="number" min="0" step="1000" value="0" oninput="I('loy')" style="width:90px"></div></div><input type="range" min="0" max="300000" step="5000" value="0" id="s-loy" oninput="S('loy')"><div class="sn">Annual spend on loyalty, CRM, email. $50k-$200k typical</div></div>
+<div class="input-group span2" style="margin-bottom:24px"><div class="input-head"><span class="input-label">Mini games add-on (optional, $/mo)</span><div class="input-val"><span class="vp">$</span><input class="vi" id="i-mglic" type="number" min="0" max="30000" step="500" value="0" oninput="I('mglic')" style="width:90px"></div></div><input type="range" min="0" max="30000" step="500" value="0" id="s-mglic" oninput="S('mglic')"><div class="sn">Mini games license fee on top of the core deal. Max $30K/mo. Use the Mini Games ROI tab to model the variable rev share separately.</div></div>
 
 <div class="section-label"><span class="dot" style="background:var(--purple)"></span>Visitor funnel</div><div class="flow" id="funnel"></div>
 <div class="section-label"><span class="dot" style="background:var(--cyan)"></span>ARPU impact</div><div class="flow" id="arpu-flow"></div>
@@ -276,6 +277,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 <div class="section-label"><span class="dot" style="background:var(--amber)"></span>Break-even analysis</div><div id="breakeven"></div>
 <div id="repeat-visit"></div>
 <div id="loyalty-compare"></div>
+<div id="mglic-block"></div>
 <div class="pitch" id="pitch"></div>
 <div id="quota-track"></div>
 <div class="gen-section">
@@ -364,7 +366,8 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 <div class="input-group"><div class="input-head"><span class="input-label">Plays / user / month</span><input class="vi" id="mgi-plays" type="number" min="0" step="1" oninput="MGI('plays')"></div><input type="range" min="1" max="200" step="1" value="20" id="mgs-plays" oninput="MGS('plays')"><div class="sn">Frequency among engaged players</div></div>
 <div class="input-group"><div class="input-head"><span class="input-label">Avg wager / play</span><div class="input-val"><span class="vp">$</span><input class="vi" id="mgi-wager" type="number" min="0" step="0.25" oninput="MGI('wager')"></div></div><input type="range" min="0.25" max="20" step="0.25" value="2" id="mgs-wager" oninput="MGS('wager')"><div class="sn">Real-money wager amount per play</div></div>
 <div class="input-group"><div class="input-head"><span class="input-label">Rake rate</span><div class="input-val"><input class="vi" id="mgi-rake" type="number" min="0" max="50" step="0.5" oninput="MGI('rake')"><span class="vp">%</span></div></div><input type="range" min="2" max="30" step="0.5" value="10" id="mgs-rake" oninput="MGS('rake')"><div class="sn">% of wagered $ Lucra extracts (industry: 5–15%)</div></div>
-<div class="input-group"><div class="input-head"><span class="input-label">Lucra rev share</span><div class="input-val"><input class="vi" id="mgi-rs" type="number" min="0" max="100" step="1" oninput="MGI('rs')"><span class="vp">%</span></div></div><input type="range" min="10" max="50" step="1" value="25" id="mgs-rs" oninput="MGS('rs')"><div class="sn">% of rake Lucra keeps; Client gets the rest</div></div>
+<div class="input-group"><div class="input-head"><span class="input-label">Lucra rev share</span><div class="input-val"><input class="vi" id="mgi-rs" type="number" min="0" max="100" step="1" oninput="MGI('rs')"><span class="vp">%</span></div></div><input type="range" min="0" max="50" step="1" value="25" id="mgs-rs" oninput="MGS('rs')"><div class="sn">% of rake Lucra keeps; 0% on true license-only deals</div></div>
+<div class="input-group span2"><div class="input-head"><span class="input-label">Monthly license fee (mini games)</span><div class="input-val"><span class="vp">$</span><input class="vi" id="mgi-license" type="number" min="0" max="30000" step="500" oninput="MGI('license')"></div></div><input type="range" min="0" max="30000" step="500" value="0" id="mgs-license" oninput="MGS('license')"><div class="sn">Max $30K/mo. Set 0 for pure rev share, $30K for true license-only (rev share 0%)</div></div>
 </div>
 
 <div class="section-label" style="margin-top:18px"><span class="dot" style="background:var(--green)"></span>Engaged players & monthly volume</div>
@@ -596,7 +599,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 <script>
 var P=[{n:'Puttshack',v:1100,a:45,f:2500,l:16},{n:"Dave & Buster's",v:375,a:45,f:2000,l:220},{n:'Topgolf',v:2500,a:38,f:2500,l:89},{n:'Bowlero',v:300,a:40,f:2000,l:360},{n:'Five Iron Golf',v:120,a:30,f:1500,l:50},{n:'PopStroke',v:400,a:35,f:2000,l:12},{n:'Avg Bowling',v:175,a:25,f:1500,l:1},{n:'Custom',v:200,a:30,f:1500,l:1}];
 var SCNS={cons:{opt:5,lift:10},avg:{opt:20,lift:12.5},case:{opt:40,lift:15}};
-var sel=0,curScn='',V={vis:1100,arpu:45,fee:2500,opt:10,lift:15,pfee:2500,loc:1,loy:0};
+var sel=0,curScn='',V={vis:1100,arpu:45,fee:2500,opt:10,lift:15,pfee:2500,loc:1,loy:0,mglic:0};
 function $(id){return document.getElementById(id)}
 function F(n){return '$'+Math.round(n).toLocaleString()}
 function fq(n){return n%1===0?''+n:n.toFixed(2)}
@@ -604,7 +607,7 @@ function ap_(){return V.arpu%1===0?'$'+V.arpu:'$'+fq(V.arpu)}
 function initP(){$('presets').innerHTML=P.map(function(p,i){return '<button class="preset'+(i===sel?' on':'')+'" onclick="pk('+i+')">'+p.n+'</button>'}).join('')}
 function pk(i){sel=i;V.vis=P[i].v;V.arpu=P[i].a;V.fee=P[i].f;V.pfee=P[i].f;V.loc=P[i].l;['n-roi','n-pricing','n-discount'].forEach(function(x){if($(x))$(x).value=P[i].n});sync();initP();U()}
 function SC(k){if(curScn===k){curScn='';document.querySelectorAll('.scn').forEach(function(b){b.classList.remove('on')});U();return}curScn=k;V.opt=SCNS[k].opt;V.lift=SCNS[k].lift;sync();document.querySelectorAll('.scn').forEach(function(b){b.classList.toggle('on',b.dataset.s===k)});U()}
-function sync(){var keys=['vis','arpu','fee','opt','lift','loc','loy'];keys.forEach(function(k){if($('s-'+k)){$('s-'+k).value=Math.min(+$('s-'+k).max,Math.max(+$('s-'+k).min,Math.round(V[k])));$('i-'+k).value=V[k]}});if($('s-pfee')){$('s-pfee').value=Math.min(3000,Math.max(500,Math.round(V.pfee)));$('i-pfee').value=Math.round(V.pfee)}checkCaps()}
+function sync(){var keys=['vis','arpu','fee','opt','lift','loc','loy','mglic'];keys.forEach(function(k){if($('s-'+k)){$('s-'+k).value=Math.min(+$('s-'+k).max,Math.max(+$('s-'+k).min,Math.round(V[k])));$('i-'+k).value=V[k]}});if($('s-pfee')){$('s-pfee').value=Math.min(3000,Math.max(500,Math.round(V.pfee)));$('i-pfee').value=Math.round(V.pfee)}checkCaps()}
 function checkCaps(){[{k:'vis',id:'oc-vis',max:3000},{k:'fee',id:'oc-fee',max:3000},{k:'pfee',id:'oc-pfee',max:3000}].forEach(function(c){if($(c.id))$(c.id).innerHTML=V[c.k]>c.max?'<div class="over-cap">Custom value above slider max ($'+c.max.toLocaleString()+')</div>':''})}
 function S(k){V[k]=+$('s-'+k).value;if(k==='fee')V.pfee=V[k];if(k==='pfee')V.fee=V[k];$('i-'+k).value=V[k];if(k==='opt'||k==='lift'){curScn='';document.querySelectorAll('.scn').forEach(function(b){b.classList.remove('on')})}checkCaps();U()}
 function I(k){var raw=$('i-'+k).value;if(raw===''||raw==='-')return;var v=parseFloat(raw);if(isNaN(v)||v<0)return;V[k]=v;if(k==='fee')V.pfee=v;if(k==='pfee')V.fee=v;var sr=$('s-'+k);if(sr)sr.value=Math.max(+sr.min,Math.min(+sr.max,Math.round(v)));if(k==='opt'||k==='lift'){curScn='';document.querySelectorAll('.scn').forEach(function(b){b.classList.remove('on')})}checkCaps();U()}
@@ -630,6 +633,10 @@ $('breakeven').innerHTML='<div class="grid grid4" style="margin-bottom:20px"><di
 $('repeat-visit').innerHTML='<div class="rv-section"><div class="section-label" style="margin-bottom:12px"><span class="dot" style="background:var(--purple)"></span>Repeat visit multiplier (the hidden ROI)</div><div class="grid grid4"><div class="stat"><div class="label">Current frequency</div><div class="val">'+baseFreq+'x/yr</div><div class="sub">D&B benchmark</div></div><div class="stat"><div class="label">With Lucra</div><div class="val purple">'+newFreq.toFixed(1)+'x/yr</div><div class="sub">+110% lift</div></div><div class="stat"><div class="label">Extra visits/yr</div><div class="val purple">+'+extraVisits.toFixed(1)+'</div><div class="sub">Per customer</div></div><div class="stat"><div class="label">Rev/customer/yr</div><div class="val green">'+F(annRepeatPerUser)+'</div><div class="sub">Repeat visits alone</div></div></div><div style="font-size:12px;color:var(--text3);margin-top:10px;text-align:center">~'+annLucraCustomers.toLocaleString()+' unique Lucra customers/yr \u00d7 '+F(annRepeatPerUser)+' = <strong style="color:var(--green)">'+F(annRepeatPerUser*annLucraCustomers)+'/yr</strong> in repeat visit revenue (not included above)</div></div>';
 
 if(loy>0){var lucCost=fee*12,savings=loy-lucCost;$('loyalty-compare').innerHTML='<div class="section-label"><span class="dot" style="background:var(--pink)"></span>Lucra vs current loyalty spend</div><div class="grid grid3" style="margin-bottom:20px"><div class="stat"><div class="label">Current annual spend</div><div class="val red">'+F(loy)+'</div><div class="sub">1-3% adoption</div></div><div class="stat"><div class="label">Lucra annual cost</div><div class="val green">'+F(lucCost)+'</div><div class="sub">'+op+'% adoption</div></div><div class="stat"><div class="label">'+(savings>0?'Savings':'Additional cost')+'</div><div class="val '+(savings>0?'green':'amber')+'">'+F(Math.abs(savings))+'</div><div class="sub">'+(savings>0?'Cheaper + higher adoption':'But '+Math.round(V.opt/1.5)+'x adoption')+'</div></div></div>'}else $('loyalty-compare').innerHTML='';
+
+// Mini games add-on
+var mglic=V.mglic||0;
+if(mglic>0){var mglicMo=mglic*loc,mglicAnn=mglicMo*12,coreAnn=fee*loc*12,combinedAnn=coreAnn+mglicAnn;$('mglic-block').innerHTML='<div class="section-label"><span class="dot" style="background:var(--green)"></span>+ Mini games add-on ('+F(mglic)+'/mo'+(loc>1?' × '+loc+' locs':'')+')</div><div class="grid grid3" style="margin-bottom:20px"><div class="stat"><div class="label">Mini games license / mo</div><div class="val green">'+F(mglicMo)+'</div><div class="sub">on top of core deal</div></div><div class="stat"><div class="label">Mini games license / yr</div><div class="val green">'+F(mglicAnn)+'</div></div><div class="stat"><div class="label">Combined ARR (core + MG)</div><div class="val green">'+F(combinedAnn)+'</div><div class="sub">Lucra license only — rev share modeled in MG tab</div></div></div>'}else $('mglic-block').innerHTML='';
 
 var pitchTxt="You get "+vis.toLocaleString()+" visitors a day. At "+op+"% opt-in that\u2019s "+r.dailyUsers+" competing through Lucra \u2014 "+r.moUsers.toLocaleString()+"/mo. Each spends $"+r.arpuLift.toFixed(2)+" more, lifting ARPU from "+ap+" to $"+r.lucraARPU.toFixed(2)+". That\u2019s "+F(r.moRev)+"/mo on a "+F(fee)+" fee \u2014 "+r.roiX+"x return. Lucra pays for itself in "+r.paybackDays+" days. You only need "+r.brkUsers+" users/day to break even."+(loc>1?" Across "+loc+" locations: "+F(fee*loc)+" MRR / "+F(fee*loc*12)+" ARR.":"");
 $('pitch').innerHTML='<button class="cp-btn" onclick="CP(\'pitch\')">Copy</button><strong>Pitch:</strong> "'+pitchTxt+'"';
@@ -946,47 +953,53 @@ initP();sync();U();
 
 /* ─── MINI GAMES ROI ──────────────────────────────────────────────── */
 var MGP=[
-  {n:'EX Sports / Sean Garnier',tau:25000000,eng:2,plays:15,wager:2,rake:10,rs:25},
-  {n:'UrbanBall',tau:100000,eng:15,plays:25,wager:3,rake:10,rs:25},
-  {n:'Generic small',tau:50000,eng:10,plays:20,wager:2,rake:10,rs:25},
-  {n:'Generic mid',tau:500000,eng:10,plays:20,wager:2,rake:10,rs:25},
-  {n:'Generic large',tau:5000000,eng:8,plays:20,wager:2,rake:10,rs:25},
-  {n:'Custom',tau:1000000,eng:10,plays:20,wager:2,rake:10,rs:25}
+  {n:'EX Sports / Sean Garnier',tau:25000000,eng:2,plays:15,wager:2,rake:10,rs:25,license:0},
+  {n:'UrbanBall',tau:100000,eng:15,plays:25,wager:3,rake:10,rs:25,license:0},
+  {n:'Generic small',tau:50000,eng:10,plays:20,wager:2,rake:10,rs:25,license:5000},
+  {n:'Generic mid',tau:500000,eng:10,plays:20,wager:2,rake:10,rs:25,license:10000},
+  {n:'Generic large',tau:5000000,eng:8,plays:20,wager:2,rake:10,rs:25,license:15000},
+  {n:'Hybrid (license + rev share)',tau:1000000,eng:10,plays:20,wager:2,rake:10,rs:15,license:15000},
+  {n:'License-only ($30K/mo)',tau:1000000,eng:10,plays:20,wager:2,rake:10,rs:0,license:30000},
+  {n:'Custom',tau:1000000,eng:10,plays:20,wager:2,rake:10,rs:25,license:0}
 ];
 var MGSCN={cons:{eng:5,plays:10,rake:5},avg:{eng:10,plays:20,rake:10},case:{eng:20,plays:40,rake:15}};
-var MG={tau:1000000,eng:10,plays:20,wager:2,rake:10,rs:25};
+var MG={tau:1000000,eng:10,plays:20,wager:2,rake:10,rs:25,license:0};
 var mgSel=5,mgScn='';
 
 function MGinitP(){$('mg-presets').innerHTML=MGP.map(function(p,i){return '<button class="preset'+(i===mgSel?' on':'')+'" onclick="MGpk('+i+')">'+p.n+'</button>'}).join('')}
-function MGpk(i){mgSel=i;var p=MGP[i];MG.tau=p.tau;MG.eng=p.eng;MG.plays=p.plays;MG.wager=p.wager;MG.rake=p.rake;MG.rs=p.rs;MGsync();MGinitP();MGu()}
+function MGpk(i){mgSel=i;var p=MGP[i];MG.tau=p.tau;MG.eng=p.eng;MG.plays=p.plays;MG.wager=p.wager;MG.rake=p.rake;MG.rs=p.rs;MG.license=p.license||0;MGsync();MGinitP();MGu()}
 function MGSC(k){if(mgScn===k){mgScn='';document.querySelectorAll('#mg .scn').forEach(function(b){b.classList.remove('on')});MGu();return}mgScn=k;var s=MGSCN[k];MG.eng=s.eng;MG.plays=s.plays;MG.rake=s.rake;MGsync();document.querySelectorAll('#mg .scn').forEach(function(b){b.classList.toggle('on',b.dataset.s===k)});MGu()}
-function MGsync(){['tau','eng','plays','wager','rake','rs'].forEach(function(k){var s=$('mgs-'+k),i=$('mgi-'+k);if(s){s.value=Math.min(+s.max,Math.max(+s.min,Math.round(MG[k]*1000)/1000))}if(i){i.value=MG[k]}})}
+function MGsync(){['tau','eng','plays','wager','rake','rs','license'].forEach(function(k){var s=$('mgs-'+k),i=$('mgi-'+k);if(s){s.value=Math.min(+s.max,Math.max(+s.min,Math.round(MG[k]*1000)/1000))}if(i){i.value=MG[k]}})}
 function MGS(k){MG[k]=+$('mgs-'+k).value;$('mgi-'+k).value=MG[k];if(k==='eng'||k==='plays'||k==='rake'){mgScn='';document.querySelectorAll('#mg .scn').forEach(function(b){b.classList.remove('on')})}MGu()}
 function MGI(k){var raw=$('mgi-'+k).value;if(raw===''||raw==='-')return;var v=parseFloat(raw);if(isNaN(v)||v<0)return;MG[k]=v;var sr=$('mgs-'+k);if(sr)sr.value=Math.max(+sr.min,Math.min(+sr.max,v));if(k==='eng'||k==='plays'||k==='rake'){mgScn='';document.querySelectorAll('#mg .scn').forEach(function(b){b.classList.remove('on')})}MGu()}
 function discMGI(k,val){var v=parseFloat(val);if(val===''||isNaN(v)||v<0)return;MG[k]=v;if($('mgi-'+k))$('mgi-'+k).value=v;var sr=$('mgs-'+k);if(sr)sr.value=Math.max(+sr.min,Math.min(+sr.max,v));MGu()}
 
-function MGcalc(tau,eng,plays,wager,rake,rs){
+function MGcalc(tau,eng,plays,wager,rake,rs,license){
   var engaged=Math.round(tau*eng/100);
   var monthlyPlays=engaged*plays;
   var monthlyWager=monthlyPlays*wager;
   var monthlyRake=monthlyWager*rake/100;
-  var lucraMo=monthlyRake*rs/100;
+  var revshareMo=monthlyRake*rs/100;
   var clientMo=monthlyRake*(100-rs)/100;
-  return{engaged:engaged,monthlyPlays:monthlyPlays,monthlyWager:monthlyWager,monthlyRake:monthlyRake,lucraMo:lucraMo,clientMo:clientMo,lucraAnn:lucraMo*12,clientAnn:clientMo*12,wagerAnn:monthlyWager*12,rakeAnn:monthlyRake*12}
+  var licenseMo=license||0;
+  var lucraMo=licenseMo+revshareMo;
+  return{engaged:engaged,monthlyPlays:monthlyPlays,monthlyWager:monthlyWager,monthlyRake:monthlyRake,licenseMo:licenseMo,revshareMo:revshareMo,lucraMo:lucraMo,clientMo:clientMo,licenseAnn:licenseMo*12,revshareAnn:revshareMo*12,lucraAnn:lucraMo*12,clientAnn:clientMo*12,wagerAnn:monthlyWager*12,rakeAnn:monthlyRake*12}
 }
 
 function MGu(){
-  var r=MGcalc(MG.tau,MG.eng,MG.plays,MG.wager,MG.rake,MG.rs);
+  var r=MGcalc(MG.tau,MG.eng,MG.plays,MG.wager,MG.rake,MG.rs,MG.license);
   // Funnel — engaged + plays + wager + rake
   $('mg-funnel').innerHTML=
     '<div class="stat"><div class="label">Engaged players</div><div class="val cyan">'+r.engaged.toLocaleString()+'</div><div class="sub">'+MG.eng+'% of '+MG.tau.toLocaleString()+'</div></div>'+
     '<div class="stat"><div class="label">Monthly plays</div><div class="val">'+r.monthlyPlays.toLocaleString()+'</div><div class="sub">'+MG.plays+' plays / engaged user</div></div>'+
     '<div class="stat"><div class="label">Monthly wagered</div><div class="val">'+F(r.monthlyWager)+'</div><div class="sub">at $'+MG.wager.toFixed(2)+' / play</div></div>'+
     '<div class="stat"><div class="label">Monthly rake</div><div class="val amber">'+F(r.monthlyRake)+'</div><div class="sub">'+MG.rake+'% of wagered $</div></div>';
-  // Lucra revenue
+  // Lucra revenue — show license + rev share breakdown if both present
+  var licLabel = r.licenseMo>0 ? F(r.licenseMo)+'/mo license' : 'no license';
+  var rsLabel = r.revshareMo>0 ? F(r.revshareMo)+'/mo rev share ('+MG.rs+'%)' : '0% rev share';
   $('mg-revenue').innerHTML=
-    '<div class="stat"><div class="label">Lucra monthly</div><div class="val green">'+F(r.lucraMo)+'</div><div class="sub">'+MG.rs+'% of rake</div></div>'+
-    '<div class="stat"><div class="label">Lucra annual</div><div class="val green">'+F(r.lucraAnn)+'</div><div class="sub">12 × monthly</div></div>'+
+    '<div class="stat"><div class="label">Lucra monthly (total)</div><div class="val green">'+F(r.lucraMo)+'</div><div class="sub">'+licLabel+' + '+rsLabel+'</div></div>'+
+    '<div class="stat"><div class="label">Lucra annual (total)</div><div class="val green">'+F(r.lucraAnn)+'</div><div class="sub">License '+F(r.licenseAnn)+' + Rev share '+F(r.revshareAnn)+'</div></div>'+
     '<div class="stat"><div class="label">Lucra effective ARPU</div><div class="val">'+F(r.engaged>0?Math.round(r.lucraAnn/r.engaged):0)+'</div><div class="sub">per engaged user / yr</div></div>';
   // Client revenue
   $('mg-client').innerHTML=
@@ -999,14 +1012,22 @@ function MGcheckReady(){var n=$('n-mg').value.trim(),btn=$('mg-pdf-btn'),msg=$('
 
 function MGbuildPitch(p,r){
   var s = p.tau.toLocaleString()+' addressable users at '+p.eng+'% engagement = '+r.engaged.toLocaleString()+' active mini-game players. Each plays '+p.plays+' times/month at $'+p.wager.toFixed(2)+' wager — that\'s '+F(r.monthlyWager)+' wagered through your ecosystem every month.';
-  s += ' At '+p.rake+'% rake, that\'s '+F(r.monthlyRake)+'/mo gross. Lucra\'s '+p.rs+'% share is '+F(r.lucraMo)+'/mo or '+F(r.lucraAnn)+'/yr.';
-  s += ' You keep the other '+(100-p.rs)+'% — '+F(r.clientMo)+'/mo, '+F(r.clientAnn)+'/yr — at zero license cost.';
+  s += ' At '+p.rake+'% rake, that\'s '+F(r.monthlyRake)+'/mo gross.';
+  if (r.licenseMo > 0 && r.revshareMo > 0) {
+    s += ' Lucra\'s structure: '+F(r.licenseMo)+'/mo license + '+p.rs+'% rev share ('+F(r.revshareMo)+'/mo) = '+F(r.lucraMo)+'/mo, '+F(r.lucraAnn)+'/yr to Lucra.';
+  } else if (r.licenseMo > 0 && p.rs === 0) {
+    s += ' This is a pure license deal: '+F(r.licenseMo)+'/mo = '+F(r.lucraAnn)+'/yr to Lucra. You keep 100% of the rake — '+F(r.clientMo)+'/mo or '+F(r.clientAnn)+'/yr.';
+    return s;
+  } else {
+    s += ' Lucra\'s '+p.rs+'% share is '+F(r.lucraMo)+'/mo or '+F(r.lucraAnn)+'/yr at zero license cost.';
+  }
+  s += ' Your share of the rake: '+F(r.clientMo)+'/mo, '+F(r.clientAnn)+'/yr.';
   return s;
 }
 
 function MGGEN(){
   var name = ($('n-mg').value || 'Partner').replace(/[^a-zA-Z0-9 ]/g,'');
-  var r = MGcalc(MG.tau,MG.eng,MG.plays,MG.wager,MG.rake,MG.rs);
+  var r = MGcalc(MG.tau,MG.eng,MG.plays,MG.wager,MG.rake,MG.rs,MG.license);
   var bg='#0d0d0f',surf='#181820',border='rgba(255,255,255,0.08)',
       green='#9DFF93',greenDim='rgba(157,255,147,0.12)',greenBorder='rgba(157,255,147,0.25)',
       amber='#F59E0B',amberDim='rgba(245,158,11,0.10)',
@@ -1042,6 +1063,7 @@ function MGGEN(){
   h += '<span style="background:'+surf+';border:1px solid '+border+';padding:3px 10px;border-radius:20px;color:'+text2+'">$'+MG.wager.toFixed(2)+' wager</span>';
   h += '<span style="background:'+surf+';border:1px solid '+border+';padding:3px 10px;border-radius:20px;color:'+text2+'">'+MG.rake+'% rake</span>';
   h += '<span style="background:'+surf+';border:1px solid '+border+';padding:3px 10px;border-radius:20px;color:'+text2+'">'+MG.rs+'/'+(100-MG.rs)+' rev share</span>';
+  if (MG.license > 0) h += '<span style="background:'+surf+';border:1px solid '+border+';padding:3px 10px;border-radius:20px;color:'+text2+'">$'+MG.license.toLocaleString()+'/mo license</span>';
   h += '</div>';
 
   // Funnel row 1: Audience → Engaged → Monthly plays
@@ -1058,10 +1080,23 @@ function MGGEN(){
   h += '<div '+fg+'><div style="font-size:9px;color:'+text3+';margin-bottom:3px">Lucra share ('+MG.rs+'%)</div><div style="font-size:16px;font-weight:600;color:'+green+'">'+F(r.lucraMo)+'</div></div>';
   h += '</div>';
 
+  // Lucra revenue subline — show license + rev share breakdown if both present
+  var lucraSubline = '';
+  if (r.licenseMo > 0 && r.revshareMo > 0) {
+    lucraSubline = F(r.licenseAnn)+' license + '+F(r.revshareAnn)+' rev share ('+MG.rs+'%)';
+  } else if (r.licenseMo > 0 && MG.rs === 0) {
+    lucraSubline = F(r.licenseAnn)+' license-only (zero rev share)';
+  } else {
+    lucraSubline = MG.rs+'% of '+F(r.rakeAnn)+' annual rake • zero license';
+  }
+  var clientSubline = r.licenseMo > 0
+    ? (100-MG.rs)+'% of '+F(r.rakeAnn)+' • '+F(r.licenseAnn)+' license paid to Lucra'
+    : (100-MG.rs)+'% of '+F(r.rakeAnn)+' • zero license';
+
   // Annual breakdown — Lucra & Client side by side
   h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">';
-  h += '<div style="background:'+greenDim+';border:1px solid '+greenBorder+';border-radius:10px;padding:14px;text-align:center"><div style="font-size:10px;color:'+green+';margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px">Lucra annual revenue</div><div style="font-size:22px;font-weight:700;color:'+green+';line-height:1.1">'+F(r.lucraAnn)+'</div><div style="font-size:10px;color:'+text2+';margin-top:4px">'+MG.rs+'% of '+F(r.rakeAnn)+' annual rake</div></div>';
-  h += '<div style="background:'+purpleDim+';border:1px solid '+purpleBorder+';border-radius:10px;padding:14px;text-align:center"><div style="font-size:10px;color:'+purple+';margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px">'+name+' annual revenue</div><div style="font-size:22px;font-weight:700;color:'+purple+';line-height:1.1">'+F(r.clientAnn)+'</div><div style="font-size:10px;color:'+text2+';margin-top:4px">'+(100-MG.rs)+'% of '+F(r.rakeAnn)+' • zero license</div></div>';
+  h += '<div style="background:'+greenDim+';border:1px solid '+greenBorder+';border-radius:10px;padding:14px;text-align:center"><div style="font-size:10px;color:'+green+';margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px">Lucra annual revenue</div><div style="font-size:22px;font-weight:700;color:'+green+';line-height:1.1">'+F(r.lucraAnn)+'</div><div style="font-size:10px;color:'+text2+';margin-top:4px">'+lucraSubline+'</div></div>';
+  h += '<div style="background:'+purpleDim+';border:1px solid '+purpleBorder+';border-radius:10px;padding:14px;text-align:center"><div style="font-size:10px;color:'+purple+';margin-bottom:4px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px">'+name+' annual revenue</div><div style="font-size:22px;font-weight:700;color:'+purple+';line-height:1.1">'+F(r.clientAnn)+'</div><div style="font-size:10px;color:'+text2+';margin-top:4px">'+clientSubline+'</div></div>';
   h += '</div>';
 
   // Pitch box
